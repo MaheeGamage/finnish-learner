@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TranslatableWord from '@/components/TranslatableWord';
 import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
+import { saveInputText, getStoredInputText, saveViewState, getStoredViewState } from '@/utils/textStorage';
 
 export default function Home() {
   const [text, setText] = useState('');
@@ -12,16 +13,33 @@ export default function Home() {
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [translationMode, setTranslationMode] = useState<TranslationMode>(TRANSLATION_MODES.BOTH);
 
+  // Load saved text and view state when component mounts
+  useEffect(() => {
+    const savedText = getStoredInputText();
+    const savedViewState = getStoredViewState();
+    
+    if (savedText) {
+      setText(savedText);
+      // Only switch to learning mode if there's text and the user was previously in learning mode
+      if (savedViewState === false && savedText.trim()) {
+        setShowInput(false);
+      }
+    }
+  }, []);
+
   const handleSwapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
     setText('');
     setShowInput(true);
+    saveViewState(true);
   };
 
   const handleSubmit = () => {
     if (text.trim()) {
       setShowInput(false);
+      saveInputText(text.trim());
+      saveViewState(false);
     }
   };
 
@@ -29,6 +47,14 @@ export default function Home() {
     setText('');
     setShowInput(true);
     setActiveWordIndex(null);
+    saveInputText('');
+    saveViewState(true);
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setText(newText);
+    saveInputText(newText); // Save text as user types
   };
 
   const words = text.split(/\s+/).filter(word => word.length > 0);
@@ -96,7 +122,7 @@ export default function Home() {
               <div className="relative">
                 <textarea
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={handleTextChange}
                   placeholder="Enter text to translate..."
                   className="w-full min-h-[150px] sm:min-h-[200px] p-4 sm:p-6 rounded-xl 
                     border-2 border-indigo-200 bg-white

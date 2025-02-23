@@ -51,16 +51,27 @@ export default function TranslatableWord({
             clearTimeout(timerRef.current);
         }
         
-        timerRef.current = setTimeout(async () => {
-            if (!translation) {
+        // Only apply delay for hover
+        if (!translation) {
+            timerRef.current = setTimeout(async () => {
                 await handleTranslation(word);
-            }
-        }, TRANSLATION_DELAY_MS);
+            }, TRANSLATION_DELAY_MS);
+        }
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
         e.preventDefault(); // Prevent double-tap zoom
-        handleMouseEnter();
+        if (translationMode === TRANSLATION_MODES.OFF) return;
+        if (translationMode !== TRANSLATION_MODES.HOVER && translationMode !== TRANSLATION_MODES.BOTH) return;
+
+        onHover();
+        setIsHighlighted(true);
+        updateTooltipPosition();
+        
+        // Immediate translation for touch
+        if (!translation) {
+            handleTranslation(word);
+        }
     };
 
     const handleMouseLeave = () => {
@@ -79,6 +90,7 @@ export default function TranslatableWord({
             onHover();
             setIsHighlighted(true);
             updateTooltipPosition();
+            // Immediate translation for selection
             handleTranslation(selection.toString().trim());
             e.stopPropagation();
         }
@@ -115,29 +127,22 @@ export default function TranslatableWord({
         };
     }, [isHighlighted]);
 
-    const tooltipClass = tooltipPosition === 'top' 
-        ? '-top-8 -translate-y-1' 
-        : 'top-full translate-y-1';
-
     return (
-        <span className="relative inline-block" ref={wordRef}>
-            <span 
-                className={`cursor-pointer px-1 py-0.5 rounded transition-all duration-200 ${TEXT_COLORS.DEFAULT}
-                    ${isHighlighted && isActive ? `${BACKGROUND_COLORS.HIGHLIGHTED} ${TEXT_COLORS.HIGHLIGHTED}` : ''}`}
-                onMouseEnter={handleMouseEnter}
-                onTouchStart={handleTouchStart}
-                onMouseLeave={handleMouseLeave}
-                onTouchEnd={handleMouseLeave}
-                onMouseUp={handleSelection}
-            >
-                {word}
-            </span>
-            {isHighlighted && isActive && translation && (
-                <span className={`absolute left-1/2 transform -translate-x-1/2 
-                    bg-white border border-gray-200 text-gray-900 
-                    px-2 py-1 rounded-lg text-sm shadow-lg 
-                    whitespace-nowrap z-10 max-w-[90vw] overflow-hidden 
-                    text-ellipsis ${tooltipClass}`}>
+        <span 
+            ref={wordRef}
+            className={`relative inline-block cursor-pointer mx-1 ${isHighlighted ? `${TEXT_COLORS.HIGHLIGHTED} ${BACKGROUND_COLORS.HIGHLIGHTED}` : TEXT_COLORS.DEFAULT}`}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onTouchStart={handleTouchStart}
+            onMouseUp={handleSelection}
+        >
+            {word}
+            {isHighlighted && translation && (
+                <span 
+                    className={`absolute ${
+                        tooltipPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
+                    } left-1/2 transform -translate-x-1/2 px-2 py-1 text-sm text-white bg-gray-800/80 rounded shadow-lg z-50 whitespace-nowrap`}
+                >
                     {translation}
                 </span>
             )}
