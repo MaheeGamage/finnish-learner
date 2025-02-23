@@ -36,9 +36,9 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
-    if (text.trim()) {
+    if (text) {  // Remove trim() to preserve whitespace
       setShowInput(false);
-      saveInputText(text.trim());
+      saveInputText(text);  // Save text as is
       saveViewState(false);
     }
   };
@@ -53,11 +53,18 @@ export default function Home() {
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
-    setText(newText);
-    saveInputText(newText); // Save text as user types
+    setText(newText);  // Store text exactly as typed
+    saveInputText(newText);
   };
 
-  const words = text.split(/\s+/).filter(word => word.length > 0);
+  // Split text preserving newlines and multiple spaces
+  const words = text
+    .split(/(\s+)/g)  // Split on whitespace but keep the separators
+    .map((part, index) => ({
+      content: part,
+      isWhitespace: /^\s+$/.test(part),
+      key: index
+    }));
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
@@ -154,18 +161,22 @@ export default function Home() {
             <div className="space-y-3 sm:space-y-4">
               <div className="p-4 sm:p-8 bg-gray-50 rounded-xl shadow-sm 
                 border-2 border-gray-100 leading-relaxed 
-                text-base sm:text-lg min-h-[150px] sm:min-h-[200px]">
-                {words.map((word, index) => (
-                  <TranslatableWord
-                    key={index}
-                    word={word}
-                    sourceLang={sourceLang}
-                    targetLang={targetLang}
-                    onHover={() => setActiveWordIndex(index)}
-                    isActive={activeWordIndex === index}
-                    translationMode={translationMode}
-                  />
-                ))}
+                text-base sm:text-lg min-h-[150px] sm:min-h-[200px] whitespace-pre-wrap">
+                {words.map(({ content, isWhitespace, key }) => 
+                  isWhitespace ? (
+                    <span key={key}>{content}</span>
+                  ) : (
+                    <TranslatableWord
+                      key={key}
+                      word={content}
+                      sourceLang={sourceLang}
+                      targetLang={targetLang}
+                      onHover={() => setActiveWordIndex(key)}
+                      isActive={activeWordIndex === key}
+                      translationMode={translationMode}
+                    />
+                  )
+                )}
               </div>
               <div className="flex justify-center">
                 <button

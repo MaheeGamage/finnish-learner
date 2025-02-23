@@ -4,6 +4,7 @@ const VIEW_STATE_KEY = 'finnish_learning_view_state';
 
 export const saveInputText = (text: string) => {
     try {
+        // Store text exactly as is, without any trimming or formatting changes
         localStorage.setItem(STORAGE_KEY, text);
         return true;
     } catch (error) {
@@ -14,6 +15,7 @@ export const saveInputText = (text: string) => {
 
 export const getStoredInputText = (): string | null => {
     try {
+        // Return the exact text as stored, preserving all whitespace
         return localStorage.getItem(STORAGE_KEY);
     } catch (error) {
         console.error('Error retrieving input text:', error);
