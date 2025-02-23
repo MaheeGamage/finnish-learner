@@ -27,7 +27,6 @@ export default function TranslatableWord({
     const wordRef = useRef<HTMLSpanElement>(null);
     const tooltipRef = useRef<HTMLSpanElement>(null);
     const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
-    const translatePromiseRef = useRef<Promise<void> | null>(null);
 
     const updateTooltipPosition = useCallback(() => {
         if (!wordRef.current || !isHighlighted) return;
@@ -206,7 +205,7 @@ export default function TranslatableWord({
 
         const rafId = requestAnimationFrame(updateTooltipPosition);
         return () => cancelAnimationFrame(rafId);
-    }, [isHighlighted, translation]);
+    }, [isHighlighted, translation, updateTooltipPosition]);
 
     return (
         <span
