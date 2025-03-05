@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import TranslatableWord from '@/components/TranslatableWord';
+import ContentSelector from '@/components/ContentSelector';
 import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
 import { saveInputText, getStoredInputText, saveViewState, getStoredViewState } from '@/utils/textStorage';
 
@@ -12,6 +13,7 @@ export default function Home() {
   const [showInput, setShowInput] = useState(true);
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [translationMode, setTranslationMode] = useState<TranslationMode>(TRANSLATION_MODES.BOTH);
+  const [showContentSelector, setShowContentSelector] = useState(false);
 
   // Load saved text and view state when component mounts
   useEffect(() => {
@@ -55,6 +57,12 @@ export default function Home() {
     const newText = e.target.value;
     setText(newText);  // Store text exactly as typed
     saveInputText(newText);
+  };
+  
+  const handleContentSelect = (content: string) => {
+    setText(content);
+    saveInputText(content);
+    setShowContentSelector(false);
   };
 
   // Split text preserving newlines and multiple spaces
@@ -126,36 +134,64 @@ export default function Home() {
 
           {showInput ? (
             <div className="space-y-3 sm:space-y-4">
-              <div className="relative">
-                <textarea
-                  value={text}
-                  onChange={handleTextChange}
-                  placeholder="Enter text to translate..."
-                  className="w-full min-h-[150px] sm:min-h-[200px] p-4 sm:p-6 rounded-xl 
-                    border-2 border-indigo-200 bg-white
-                    focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 
-                    text-gray-900 placeholder-gray-500
-                    text-base sm:text-lg leading-relaxed shadow-inner
-                    transition-all duration-200"
-                  style={{ resize: 'none' }}
-                />
-                <div className="absolute bottom-2 right-2 text-xs sm:text-sm text-gray-600">
-                  {text.length} characters
+              {/* Content Selection */}
+              {showContentSelector ? (
+                <div className="mt-2">
+                  <ContentSelector
+                    onContentSelect={handleContentSelect}
+                    currentLang={sourceLang}
+                  />
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={() => setShowContentSelector(false)}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex justify-center">
-                <button
-                  onClick={handleSubmit}
-                  className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-indigo-600 
-                    text-white rounded-lg hover:bg-indigo-700 
-                    transition-all duration-200 shadow-md 
-                    hover:shadow-lg disabled:opacity-50
-                    disabled:cursor-not-allowed text-base sm:text-lg font-medium"
-                  disabled={!text.trim()}
-                >
-                  Start Learning
-                </button>
-              </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <textarea
+                      value={text}
+                      onChange={handleTextChange}
+                      placeholder="Enter text to translate..."
+                      className="w-full min-h-[150px] sm:min-h-[200px] p-4 sm:p-6 rounded-xl 
+                        border-2 border-indigo-200 bg-white
+                        focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 
+                        text-gray-900 placeholder-gray-500
+                        text-base sm:text-lg leading-relaxed shadow-inner
+                        transition-all duration-200"
+                      style={{ resize: 'none' }}
+                    />
+                    <div className="absolute bottom-2 right-2 text-xs sm:text-sm text-gray-600">
+                      {text.length} characters
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                    <button
+                      onClick={() => setShowContentSelector(true)}
+                      className="px-6 py-2.5 bg-indigo-100 text-indigo-700 rounded-lg 
+                        hover:bg-indigo-200 transition-colors shadow-sm 
+                        hover:shadow-md text-base sm:text-lg font-medium"
+                    >
+                      Select Content
+                    </button>
+                    <button
+                      onClick={handleSubmit}
+                      className="px-6 sm:px-8 py-2.5 sm:py-3 bg-indigo-600 
+                        text-white rounded-lg hover:bg-indigo-700 
+                        transition-all duration-200 shadow-md 
+                        hover:shadow-lg disabled:opacity-50
+                        disabled:cursor-not-allowed text-base sm:text-lg font-medium"
+                      disabled={!text.trim()}
+                    >
+                      Start Learning
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
@@ -178,10 +214,21 @@ export default function Home() {
                   )
                 )}
               </div>
-              <div className="flex justify-center">
+              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                <button
+                  onClick={() => {
+                    setShowInput(true);
+                    setShowContentSelector(true);
+                  }}
+                  className="px-6 py-2.5 bg-indigo-100 text-indigo-700 rounded-lg 
+                    hover:bg-indigo-200 transition-colors shadow-sm 
+                    hover:shadow-md text-base sm:text-lg font-medium"
+                >
+                  Change Content
+                </button>
                 <button
                   onClick={handleClear}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-gray-200 
+                  className="px-6 py-2.5 bg-gray-200 
                     text-gray-700 rounded-lg hover:bg-gray-300 
                     transition-colors shadow-sm hover:shadow-md 
                     text-base sm:text-lg font-medium"
