@@ -139,7 +139,6 @@ export default function Home() {
                 <div className="mt-2">
                   <ContentSelector
                     onContentSelect={handleContentSelect}
-                    currentLang={sourceLang}
                   />
                   <div className="mt-4 flex justify-center">
                     <button

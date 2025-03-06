@@ -3,10 +3,9 @@ import { ContentItem } from '@/utils/contentLoader';
 
 interface ContentSelectorProps {
   onContentSelect: (content: string) => void;
-  currentLang: 'en' | 'fi';
 }
 
-export default function ContentSelector({ onContentSelect, currentLang }: ContentSelectorProps) {
+export default function ContentSelector({ onContentSelect }: ContentSelectorProps) {
   const [contentList, setContentList] = useState<Omit<ContentItem, 'content'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
