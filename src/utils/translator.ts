@@ -1,18 +1,13 @@
-interface TranslationResponse {
-    responseData: {
-        translatedText: string;
-    };
-}
+// Re-export the translateWord function from the new translation system
+// This maintains backward compatibility for existing code
+export { translateWord } from './translation';
 
-export const translateWord = async (word: string, from: 'en'|'fi', to: 'en'|'fi'): Promise<string> => {
-    try {
-        const response = await fetch(
-            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=${from}|${to}`
-        );
-        const data: TranslationResponse = await response.json();
-        return data.responseData.translatedText;
-    } catch (error) {
-        console.error('Translation error:', error);
-        return 'Translation error';
-    }
-};
+// Also export the new translation system for advanced usage
+export {
+    TranslationService,
+    TranslationServiceFactory,
+    MyMemoryProvider,
+    MockProvider,
+    AVAILABLE_PROVIDERS
+} from './translation';
+export type { TranslationProvider, ProviderType } from './translation';
