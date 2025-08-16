@@ -139,21 +139,6 @@ export default function TranslatableWord({
         setIsHighlighted(false);
     };
 
-    const handleSelection = (e: React.MouseEvent) => {
-        if (translationMode === TRANSLATION_MODES.OFF) return;
-        if (translationMode !== TRANSLATION_MODES.SELECTION && translationMode !== TRANSLATION_MODES.BOTH) return;
-
-        const selection = window.getSelection();
-        if (selection && selection.toString().trim()) {
-            onHover();
-            setIsHighlighted(true);
-            updateTooltipPosition();
-            // Immediate translation for selection
-            handleTranslation(selection.toString().trim());
-            e.stopPropagation();
-        }
-    };
-
     useEffect(() => {
         return () => {
             if (timerRef.current) {
@@ -215,10 +200,10 @@ export default function TranslatableWord({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onTouchStart={handleTouchStart}
-            onMouseUp={handleSelection}
         >
             {word}
-            {isHighlighted && translation && (
+            {isHighlighted && translation && 
+             (translationMode === TRANSLATION_MODES.HOVER || translationMode === TRANSLATION_MODES.BOTH) && (
                 <span 
                     ref={tooltipRef}
                     style={{
