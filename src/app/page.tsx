@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import TranslatableWord from '@/components/TranslatableWord';
 import ContentSelector from '@/components/ContentSelector';
 import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
+import { SELECTION_CONFIG, TRANSLATION_CONFIG } from '@/config/selectionConfig';
 import { saveInputText, getStoredInputText, saveViewState, getStoredViewState } from '@/utils/textStorage';
 import { translateWord } from '@/utils/translator';
 
@@ -67,14 +68,23 @@ export default function Home() {
         clearTimeout(debounceTimer);
       }
 
-      if (selectedText && selectedText.length > 2) { // Minimum 3 characters to avoid unnecessary translations
+      if (selectedText && selectedText.length > SELECTION_CONFIG.MIN_SELECTION_LENGTH) {
+        // Check if selection is too long
+        if (selectedText.length > SELECTION_CONFIG.MAX_SELECTION_LENGTH) {
+          setSelectedText(selectedText);
+          setShowSubtitlePopup(true);
+          setIsTranslationLoading(false);
+          setSelectedTranslation(TRANSLATION_CONFIG.ERRORS.SELECTION_TOO_LONG);
+          return;
+        }
+
         // Show popup immediately with selected text
         setSelectedText(selectedText);
         setShowSubtitlePopup(true);
         setIsTranslationLoading(true);
         setSelectedTranslation('');
 
-        // Debounce the translation request (300ms delay)
+        // Debounce the translation request
         debounceTimer = setTimeout(async () => {
           try {
             const result = await translateWord(selectedText, sourceLang, targetLang);
@@ -82,10 +92,10 @@ export default function Home() {
             setIsTranslationLoading(false);
           } catch (error) {
             console.error('Error translating selection:', error);
-            setSelectedTranslation('Translation error');
+            setSelectedTranslation(TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR);
             setIsTranslationLoading(false);
           }
-        }, 300);
+        }, SELECTION_CONFIG.DEBOUNCE_DELAY);
       } else {
         // No selection - hide popup immediately
         setShowSubtitlePopup(false);
@@ -343,7 +353,7 @@ export default function Home() {
                 {isTranslationLoading ? (
                   <div className="flex items-center justify-center sm:justify-end space-x-2">
                     <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
-                    <span className="text-xs sm:text-sm text-gray-300">Translating...</span>
+                    <span className="text-xs sm:text-sm text-gray-300">{TRANSLATION_CONFIG.LOADING_TEXT}</span>
                   </div>
                 ) : (
                   <div className="text-sm sm:text-base font-medium text-blue-200 break-words">
