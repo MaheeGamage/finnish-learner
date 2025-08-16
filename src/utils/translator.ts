@@ -4,6 +4,10 @@ interface TranslationResponse {
     };
 }
 
+interface GoogleTranslateResponse {
+    0: Array<[string, string]>;
+}
+
 /**
  * Translate text using Google's unofficial web API
  * @param text - The text to translate
@@ -28,8 +32,8 @@ async function googleTranslateUnofficial(text: string, targetLang = 'en', source
         throw new Error(`HTTP error! Status: ${res.status}`);
     }
 
-    const data = await res.json();
-    return data[0].map((item: any[]) => item[0]).join('');
+    const data = await res.json() as GoogleTranslateResponse;
+    return data[0].map((item: [string, string]) => item[0]).join('');
 }
 
 /**
