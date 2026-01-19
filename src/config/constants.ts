@@ -17,3 +17,11 @@ export const TRANSLATION_MODES = {
 } as const;
 
 export type TranslationMode = typeof TRANSLATION_MODES[keyof typeof TRANSLATION_MODES];
+
+// PDF Upload Configuration
+export const PDF_UPLOAD_LIMITS = {
+    MAX_FILE_SIZE_MB: 10, // Maximum file size in MB
+    MAX_FILE_SIZE_BYTES: 10 * 1024 * 1024, // 10MB in bytes
+    MAX_TEXT_LENGTH: 100000, // Maximum extracted text length in characters
+    ALLOWED_MIME_TYPES: ['application/pdf'] as const,
+} as const;
