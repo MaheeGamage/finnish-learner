@@ -10,7 +10,7 @@ export const SELECTION_CONFIG = {
   MIN_SELECTION_LENGTH: 3,
   
   // Maximum character length for selection (to prevent very long selections)
-  MAX_SELECTION_LENGTH: 1000,
+  MAX_SELECTION_LENGTH: 500,
   
   // Animation duration for popups (in milliseconds)
   POPUP_ANIMATION_DURATION: 200,
