@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { translateWord } from '@/utils/translator';
+import { hasTextSelection } from '@/utils/textUtils';
 import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
 
 interface TranslatableWordProps {
@@ -100,6 +101,11 @@ export default function TranslatableWord({
         if (translationMode === TRANSLATION_MODES.OFF) return;
         if (translationMode !== TRANSLATION_MODES.HOVER && translationMode !== TRANSLATION_MODES.BOTH) return;
 
+        // Don't show hover popup if user has text selected
+        if (hasTextSelection()) {
+            return;
+        }
+
         onHover();
         setIsHighlighted(true);
         
@@ -121,6 +127,11 @@ export default function TranslatableWord({
         e.preventDefault(); // Prevent double-tap zoom
         if (translationMode === TRANSLATION_MODES.OFF) return;
         if (translationMode !== TRANSLATION_MODES.HOVER && translationMode !== TRANSLATION_MODES.BOTH) return;
+
+        // Don't show touch popup if user has text selected
+        if (hasTextSelection()) {
+            return;
+        }
 
         onHover();
         setIsHighlighted(true);
