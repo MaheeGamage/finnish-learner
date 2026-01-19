@@ -216,17 +216,6 @@ export default function Home() {
               </div>
               <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
                 <button
-                  onClick={() => {
-                    setShowInput(true);
-                    setShowContentSelector(true);
-                  }}
-                  className="px-6 py-2.5 bg-indigo-100 text-indigo-700 rounded-lg 
-                    hover:bg-indigo-200 transition-colors shadow-sm 
-                    hover:shadow-md text-base sm:text-lg font-medium"
-                >
-                  Change Content
-                </button>
-                <button
                   onClick={handleClear}
                   className="px-6 py-2.5 bg-gray-200 
                     text-gray-700 rounded-lg hover:bg-gray-300 
