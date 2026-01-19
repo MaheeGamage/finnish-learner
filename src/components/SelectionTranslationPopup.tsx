@@ -22,6 +22,7 @@ export default function SelectionTranslationPopup({
   const [selectedTranslation, setSelectedTranslation] = useState('');
   const [showSubtitlePopup, setShowSubtitlePopup] = useState(false);
   const [isTranslationLoading, setIsTranslationLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   // Handle real-time text selection for subtitle popup
   useEffect(() => {
@@ -57,9 +58,10 @@ export default function SelectionTranslationPopup({
       if (selectedText && selectedText.length > SELECTION_CONFIG.MIN_SELECTION_LENGTH) {
         // Check if selection is too long
         if (selectedText.length > SELECTION_CONFIG.MAX_SELECTION_LENGTH) {
-          setSelectedText(selectedText);
+          setSelectedText('');
           setShowSubtitlePopup(true);
           setIsTranslationLoading(false);
+          setIsError(true);
           setSelectedTranslation(TRANSLATION_CONFIG.ERRORS.SELECTION_TOO_LONG);
           return;
         }
@@ -68,6 +70,7 @@ export default function SelectionTranslationPopup({
         setSelectedText(selectedText);
         setShowSubtitlePopup(true);
         setIsTranslationLoading(true);
+        setIsError(false);
         setSelectedTranslation('');
 
         // Debounce the translation request
@@ -78,6 +81,7 @@ export default function SelectionTranslationPopup({
             setIsTranslationLoading(false);
           } catch (error) {
             console.error('Error translating selection:', error);
+            setIsError(true);
             setSelectedTranslation(TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR);
             setIsTranslationLoading(false);
           }
@@ -88,6 +92,7 @@ export default function SelectionTranslationPopup({
         setSelectedText('');
         setSelectedTranslation('');
         setIsTranslationLoading(false);
+        setIsError(false);
       }
     };
 
@@ -107,36 +112,47 @@ export default function SelectionTranslationPopup({
       <div className="bg-black/80 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg shadow-2xl backdrop-blur-sm 
         w-[95vw] sm:w-[85vw] md:w-[75vw] lg:w-[65vw] xl:w-[55vw] max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
-          {/* Original Text */}
-          <div className="flex-1 text-center sm:text-left min-w-0 w-full sm:w-auto">
-            <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1">
-              {sourceLang.toUpperCase()}
-            </div>
-            <div className="text-sm sm:text-base font-medium break-words">
-              &ldquo;{selectedText}&rdquo;
-            </div>
-          </div>
-          
-          {/* Arrow/Divider */}
-          <div className="hidden sm:block text-gray-400 mx-2 flex-shrink-0">→</div>
-          <div className="sm:hidden w-full border-t border-gray-600 my-1"></div>
-          
-          {/* Translation */}
-          <div className="flex-1 text-center sm:text-right min-w-0 w-full sm:w-auto">
-            <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1">
-              {targetLang.toUpperCase()}
-            </div>
-            {isTranslationLoading ? (
-              <div className="flex items-center justify-center sm:justify-end space-x-2">
-                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
-                <span className="text-xs sm:text-sm text-gray-300">{TRANSLATION_CONFIG.LOADING_TEXT}</span>
+          {!isError ? (
+            <>
+              {/* Original Text */}
+              <div className="flex-1 text-center sm:text-left min-w-0 w-full sm:w-auto">
+                <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1">
+                  {sourceLang.toUpperCase()}
+                </div>
+                <div className="text-sm sm:text-base font-medium break-words">
+                  &ldquo;{selectedText}&rdquo;
+                </div>
               </div>
-            ) : (
-              <div className="text-sm sm:text-base font-medium text-blue-200 break-words">
-                &ldquo;{selectedTranslation}&rdquo;
+              
+              {/* Arrow/Divider */}
+              <div className="hidden sm:block text-gray-400 mx-2 flex-shrink-0">→</div>
+              <div className="sm:hidden w-full border-t border-gray-600 my-1"></div>
+              
+              {/* Translation */}
+              <div className="flex-1 text-center sm:text-right min-w-0 w-full sm:w-auto">
+                <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1">
+                  {targetLang.toUpperCase()}
+                </div>
+                {isTranslationLoading ? (
+                  <div className="flex items-center justify-center sm:justify-end space-x-2">
+                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                    <span className="text-xs sm:text-sm text-gray-300">{TRANSLATION_CONFIG.LOADING_TEXT}</span>
+                  </div>
+                ) : (
+                  <div className="text-sm sm:text-base font-medium text-blue-200 break-words">
+                    &ldquo;{selectedTranslation}&rdquo;
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            /* Error message only */
+            <div className="flex-1 text-center w-full">
+              <div className="text-sm sm:text-base font-medium text-red-300 break-words">
+                {selectedTranslation}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
