@@ -15,8 +15,7 @@ export async function POST(request: Request) {
     }
 
     // Validate file type
-    const allowedTypes = PDF_UPLOAD_LIMITS.ALLOWED_MIME_TYPES;
-    if (!allowedTypes.includes(file.type as typeof allowedTypes[number])) {
+    if (!PDF_UPLOAD_LIMITS.ALLOWED_MIME_TYPES.includes(file.type as 'application/pdf')) {
       return NextResponse.json(
         { error: 'Invalid file type. Only PDF files are allowed.' },
         { status: 400 }

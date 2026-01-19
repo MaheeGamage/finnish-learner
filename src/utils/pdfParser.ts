@@ -81,7 +81,8 @@ function reformatPdfText(text: string): string {
   formatted = formatted.replace(/\n{3,}/g, '\n\n');
 
   // Fix hyphenated words at line breaks (common in PDFs)
-  formatted = formatted.replace(/(\w+)-\n(\w+)/g, '$1$2');
+  // Using \S+ to match non-whitespace including Finnish special characters (ä, ö, å)
+  formatted = formatted.replace(/(\S+)-\n(\S+)/g, '$1$2');
 
   // Normalize spaces (replace multiple spaces with single space)
   formatted = formatted.replace(/ {2,}/g, ' ');

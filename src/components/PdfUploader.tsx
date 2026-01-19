@@ -12,8 +12,8 @@ export default function PdfUploader({ onTextExtracted }: PdfUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    // Validate file type
-    if (file.type !== 'application/pdf') {
+    // Validate file type using centralized constants
+    if (!PDF_UPLOAD_LIMITS.ALLOWED_MIME_TYPES.includes(file.type as 'application/pdf')) {
       setError('Please upload a PDF file');
       return;
     }
