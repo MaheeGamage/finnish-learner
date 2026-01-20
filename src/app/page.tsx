@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TranslatableWord from '@/components/TranslatableWord';
 import ContentSelector from '@/components/ContentSelector';
 import SelectionTranslationPopup from '@/components/SelectionTranslationPopup';
 import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
-import { saveInputText, getStoredInputText, saveViewState, getStoredViewState } from '@/utils/textStorage';
+import { saveInputText, getStoredInputText, saveViewState, getStoredViewState, saveAutoCleanState, getStoredAutoCleanState } from '@/utils/textStorage';
+import { cleanCopiedText } from '@/utils/textUtils';
 
 export default function Home() {
   const [text, setText] = useState('');
@@ -15,11 +16,14 @@ export default function Home() {
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [translationMode, setTranslationMode] = useState<TranslationMode>(TRANSLATION_MODES.BOTH);
   const [showContentSelector, setShowContentSelector] = useState(false);
+  const [autoCleanText, setAutoCleanText] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load saved text and view state when component mounts
   useEffect(() => {
     const savedText = getStoredInputText();
     const savedViewState = getStoredViewState();
+    const savedAutoClean = getStoredAutoCleanState();
     
     if (savedText) {
       setText(savedText);
@@ -28,6 +32,8 @@ export default function Home() {
         setShowInput(false);
       }
     }
+    
+    setAutoCleanText(savedAutoClean);
   }, []);
 
   const handleSwapLanguages = () => {
@@ -58,6 +64,38 @@ export default function Home() {
     const newText = e.target.value;
     setText(newText);  // Store text exactly as typed
     saveInputText(newText);
+  };
+  
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!autoCleanText) return; // Only clean if checkbox is enabled
+    
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const cleanedText = cleanCopiedText(pastedText);
+    
+    // Insert cleaned text at cursor position
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentText = text;
+      const newText = currentText.substring(0, start) + cleanedText + currentText.substring(end);
+      
+      setText(newText);
+      saveInputText(newText);
+      
+      // Set cursor position after pasted text
+      setTimeout(() => {
+        const newCursorPos = start + cleanedText.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    }
+  };
+  
+  const handleAutoCleanToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setAutoCleanText(checked);
+    saveAutoCleanState(checked);
   };
   
   const handleContentSelect = (content: string) => {
@@ -152,21 +190,41 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  <div className="relative">
-                    <textarea
-                      value={text}
-                      onChange={handleTextChange}
-                      placeholder="Enter text to translate..."
-                      className="w-full min-h-[150px] sm:min-h-[200px] p-4 sm:p-6 rounded-xl 
-                        border-2 border-indigo-200 bg-white
-                        focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 
-                        text-gray-900 placeholder-gray-500
-                        text-base sm:text-lg leading-relaxed shadow-inner
-                        transition-all duration-200"
-                      style={{ resize: 'none' }}
-                    />
-                    <div className="absolute bottom-2 right-2 text-xs sm:text-sm text-gray-600">
-                      {text.length} characters
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 px-1">
+                      <input
+                        type="checkbox"
+                        id="autoCleanText"
+                        checked={autoCleanText}
+                        onChange={handleAutoCleanToggle}
+                        className="w-4 h-4 text-indigo-600 bg-white border-gray-300 
+                          rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
+                      />
+                      <label 
+                        htmlFor="autoCleanText" 
+                        className="text-sm text-gray-700 cursor-pointer select-none"
+                      >
+                        Auto-clean pasted text (removes PDF formatting, page numbers, extra spaces)
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <textarea
+                        ref={textareaRef}
+                        value={text}
+                        onChange={handleTextChange}
+                        onPaste={handlePaste}
+                        placeholder="Enter text to translate..."
+                        className="w-full min-h-[150px] sm:min-h-[200px] p-4 sm:p-6 rounded-xl 
+                          border-2 border-indigo-200 bg-white
+                          focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 
+                          text-gray-900 placeholder-gray-500
+                          text-base sm:text-lg leading-relaxed shadow-inner
+                          transition-all duration-200"
+                        style={{ resize: 'none' }}
+                      />
+                      <div className="absolute bottom-2 right-2 text-xs sm:text-sm text-gray-600">
+                        {text.length} characters
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
