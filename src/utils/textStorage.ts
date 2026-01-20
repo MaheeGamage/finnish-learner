@@ -1,6 +1,7 @@
 // Text storage utility functions
 const STORAGE_KEY = 'finnish_learning_input_text';
 const VIEW_STATE_KEY = 'finnish_learning_view_state';
+const AUTO_CLEAN_KEY = 'finnish_learning_auto_clean';
 
 export const saveInputText = (text: string) => {
     try {
@@ -40,5 +41,25 @@ export const getStoredViewState = (): boolean | null => {
     } catch (error) {
         console.error('Error retrieving view state:', error);
         return null;
+    }
+};
+
+export const saveAutoCleanState = (enabled: boolean) => {
+    try {
+        localStorage.setItem(AUTO_CLEAN_KEY, String(enabled));
+        return true;
+    } catch (error) {
+        console.error('Error saving auto-clean state:', error);
+        return false;
+    }
+};
+
+export const getStoredAutoCleanState = (): boolean => {
+    try {
+        const state = localStorage.getItem(AUTO_CLEAN_KEY);
+        return state === null ? false : state === 'true';
+    } catch (error) {
+        console.error('Error retrieving auto-clean state:', error);
+        return false;
     }
 };
