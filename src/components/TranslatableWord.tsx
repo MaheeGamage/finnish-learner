@@ -34,6 +34,9 @@ export default function TranslatableWord({
     const wordRef = useRef<HTMLSpanElement>(null);
     const tooltipRef = useRef<HTMLSpanElement>(null);
     const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+    const touchStartTimeRef = useRef<number | null>(null);
+    const touchMovedRef = useRef(false);
+    const LONG_PRESS_THRESHOLD_MS = 350;
 
     const updateTooltipPosition = useCallback(() => {
         if (!wordRef.current || !isHighlighted) return;
@@ -131,8 +134,7 @@ export default function TranslatableWord({
         }
     };
 
-    const handleTouchStart = (e: React.TouchEvent) => {
-        e.preventDefault(); // Prevent double-tap zoom
+    const showTouchTooltip = () => {
         if (translationMode === TRANSLATION_MODES.OFF) return;
         if (translationMode !== TRANSLATION_MODES.HOVER && translationMode !== TRANSLATION_MODES.BOTH) return;
 
@@ -151,6 +153,37 @@ export default function TranslatableWord({
         } else {
             onTranslated(tokenIndex);
         }
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        e.preventDefault(); // Prevent double-tap zoom
+        if (translationMode === TRANSLATION_MODES.OFF) return;
+        if (translationMode !== TRANSLATION_MODES.HOVER && translationMode !== TRANSLATION_MODES.BOTH) return;
+
+        touchStartTimeRef.current = Date.now();
+        touchMovedRef.current = false;
+    };
+
+    const handleTouchMove = () => {
+        touchMovedRef.current = true;
+        if (hasTextSelection()) {
+            setIsHighlighted(false);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        const startTime = touchStartTimeRef.current;
+        touchStartTimeRef.current = null;
+        if (!touchMovedRef.current && !hasTextSelection()) {
+            const duration = startTime ? Date.now() - startTime : 0;
+            if (duration < LONG_PRESS_THRESHOLD_MS) {
+                showTouchTooltip();
+            }
+        }
+    };
+
+    const handleTouchCancel = () => {
+        touchStartTimeRef.current = null;
     };
 
     const handleMouseLeave = () => {
@@ -174,6 +207,20 @@ export default function TranslatableWord({
             setIsTooltipReady(false);
         }
     }, [isActive]);
+
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            if (hasTextSelection()) {
+                setIsHighlighted(false);
+                setIsTooltipReady(false);
+            }
+        };
+
+        document.addEventListener('selectionchange', handleSelectionChange);
+        return () => {
+            document.removeEventListener('selectionchange', handleSelectionChange);
+        };
+    }, []);
 
     // Listen for scroll and resize events to update tooltip position
     useEffect(() => {
@@ -227,6 +274,9 @@ export default function TranslatableWord({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchCancel}
         >
             {word}
             {isHighlighted && translation && 
