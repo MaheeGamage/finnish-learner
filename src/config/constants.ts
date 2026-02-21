@@ -7,7 +7,7 @@ export const TEXT_COLORS = {
 
 export const BACKGROUND_COLORS = {
     HIGHLIGHTED: 'bg-indigo-100',
-    LAST_TRANSLATED: 'bg-amber-100',
+    LAST_TRANSLATED: 'bg-purple-100',
 };
 
 export const TRANSLATION_MODES = {
