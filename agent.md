@@ -16,7 +16,7 @@
 7. [Content System](#7-content-system)
 8. [Conventions & Patterns](#8-conventions--patterns)
 9. [Known Decisions & Trade-offs](#9-known-decisions--trade-offs)
-10. [Running the Project](#10-running-the-project)
+10. [Setup & Running](#10-setup--running) → README.md
 11. [Session History](#11-session-history)
 
 ---
@@ -215,22 +215,7 @@ User clicks "Select Content"
 
 ## 7. Content System
 
-### Adding New Content
-
-1. Create a new `.md` file in `public/content/finnish/`.
-2. Add YAML frontmatter at the top:
-   ```markdown
-   ---
-   title: Title shown in UI
-   description: One line description
-   difficulty: beginner | intermediate | advanced
-   tags: [tag1, tag2]
-   ---
-
-   Finnish text body here...
-   ```
-3. The filename (without `.md`) becomes the content ID.
-4. No code changes needed — the API auto-discovers all files in the directory.
+Content files are auto-discovered from `public/content/finnish/*.md` — no code changes needed when adding new files. For the full how-to (file format, frontmatter example, naming), see [README.md → Adding Content](README.md#adding-content).
 
 ### Frontmatter Fields
 
@@ -271,30 +256,9 @@ User clicks "Select Content"
 
 ---
 
-## 10. Running the Project
+## 10. Setup & Running
 
-```bash
-# Install dependencies
-npm install
-
-# Start dev server (Turbopack)
-npm run dev
-# → http://localhost:3000
-
-# Build for production
-npm run build
-npm start
-
-# Lint
-npm run lint
-```
-
-**Key dependencies:**
-- `next@15` with App Router + Turbopack
-- `react@19`
-- `tailwindcss@3`
-- `gray-matter` — YAML frontmatter parsing
-- `@heroicons/react` — icon set (available but minimally used)
+See [README.md](README.md) for install, dev, build, and lint commands.
 
 ---
 
