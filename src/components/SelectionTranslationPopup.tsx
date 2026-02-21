@@ -30,7 +30,7 @@ export default function SelectionTranslationPopup({
   useEffect(() => {
     let debounceTimer: NodeJS.Timeout;
 
-    const getElementFromNode = (node: Node | null): Element | null => {
+    const getElementFromNode = (node: Node | null | undefined): Element | null => {
       if (!node) return null;
       return node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
     };
@@ -56,7 +56,7 @@ export default function SelectionTranslationPopup({
         : { start: endIndex, end: startIndex };
     };
 
-    const isWithinReadingContent = (node: Node | null) => {
+    const isWithinReadingContent = (node: Node | null | undefined) => {
       const element = getElementFromNode(node);
       return !!element?.closest?.('#reading-content');
     };
