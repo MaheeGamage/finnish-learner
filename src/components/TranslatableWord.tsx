@@ -5,19 +5,25 @@ import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES
 
 interface TranslatableWordProps {
     word: string;
+    tokenIndex: number;
     sourceLang: 'en' | 'fi';
     targetLang: 'en' | 'fi';
     onHover: () => void;
+    onTranslated: (tokenIndex: number) => void;
     isActive: boolean;
+    isLastTranslated: boolean;
     translationMode: TranslationMode;
 }
 
 export default function TranslatableWord({ 
     word, 
+    tokenIndex,
     sourceLang, 
     targetLang, 
     onHover, 
+    onTranslated,
     isActive,
+    isLastTranslated,
     translationMode 
 }: TranslatableWordProps) {
     const [translation, setTranslation] = useState<string>('');
@@ -86,6 +92,7 @@ export default function TranslatableWord({
             if (!result) return;
             
             setTranslation(result);
+            onTranslated(tokenIndex);
             // Calculate position while tooltip is invisible
             requestAnimationFrame(() => {
                 updateTooltipPosition();
@@ -119,6 +126,7 @@ export default function TranslatableWord({
                 handleTranslation(word);
             }, TRANSLATION_DELAY_MS);
         } else {
+            onTranslated(tokenIndex);
             requestAnimationFrame(updateTooltipPosition);
         }
     };
@@ -140,6 +148,8 @@ export default function TranslatableWord({
         // Immediate translation for touch
         if (!translation) {
             handleTranslation(word);
+        } else {
+            onTranslated(tokenIndex);
         }
     };
 
@@ -203,10 +213,16 @@ export default function TranslatableWord({
         return () => cancelAnimationFrame(rafId);
     }, [isHighlighted, translation, updateTooltipPosition]);
 
+    const lastTranslatedClass = !isHighlighted && isLastTranslated ? BACKGROUND_COLORS.LAST_TRANSLATED : '';
+    const highlightClass = isHighlighted
+        ? `${TEXT_COLORS.HIGHLIGHTED} ${BACKGROUND_COLORS.HIGHLIGHTED}`
+        : TEXT_COLORS.DEFAULT;
+
     return (
         <span
             ref={wordRef}
-            className={`relative inline-block ${isHighlighted ? `${TEXT_COLORS.HIGHLIGHTED} ${BACKGROUND_COLORS.HIGHLIGHTED}` : TEXT_COLORS.DEFAULT}`}
+            data-token-index={tokenIndex}
+            className={`relative inline-block ${highlightClass} ${lastTranslatedClass}`}
             style={{ whiteSpace: 'pre-wrap' }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}

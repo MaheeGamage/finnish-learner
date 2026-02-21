@@ -4,8 +4,20 @@ import { useState, useEffect } from 'react';
 import TranslatableWord from '@/components/TranslatableWord';
 import ContentSelector from '@/components/ContentSelector';
 import SelectionTranslationPopup from '@/components/SelectionTranslationPopup';
-import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
-import { saveInputText, getStoredInputText, saveViewState, getStoredViewState } from '@/utils/textStorage';
+import { BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
+import { 
+  saveInputText, 
+  getStoredInputText, 
+  saveViewState, 
+  getStoredViewState,
+  saveReadingScrollY,
+  getReadingScrollY,
+  saveLastTranslatedRange,
+  getLastTranslatedRange,
+  clearReadingScrollY,
+  clearLastTranslatedRange,
+  type LastTranslatedRange,
+} from '@/utils/textStorage';
 
 export default function Home() {
   const [text, setText] = useState('');
@@ -15,11 +27,16 @@ export default function Home() {
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [translationMode, setTranslationMode] = useState<TranslationMode>(TRANSLATION_MODES.BOTH);
   const [showContentSelector, setShowContentSelector] = useState(false);
+  const [lastTranslatedRange, setLastTranslatedRange] = useState<LastTranslatedRange | null>(null);
+  const [savedScrollY, setSavedScrollY] = useState<number | null>(null);
+  const [hasRestoredScroll, setHasRestoredScroll] = useState(false);
 
   // Load saved text and view state when component mounts
   useEffect(() => {
     const savedText = getStoredInputText();
     const savedViewState = getStoredViewState();
+    const storedScrollY = getReadingScrollY();
+    const storedLastTranslatedRange = getLastTranslatedRange();
     
     if (savedText) {
       setText(savedText);
@@ -28,14 +45,44 @@ export default function Home() {
         setShowInput(false);
       }
     }
+
+    if (storedScrollY !== null) {
+      setSavedScrollY(storedScrollY);
+    }
+
+    if (storedLastTranslatedRange) {
+      setLastTranslatedRange(storedLastTranslatedRange);
+    }
   }, []);
+
+  useEffect(() => {
+    if (showInput) return;
+    if (savedScrollY === null) return;
+    if (hasRestoredScroll) return;
+
+    requestAnimationFrame(() => {
+      window.scrollTo(0, savedScrollY);
+      setHasRestoredScroll(true);
+    });
+  }, [showInput, savedScrollY, hasRestoredScroll]);
+
+  const handleTranslatedRange = (range: LastTranslatedRange) => {
+    setLastTranslatedRange(range);
+    saveLastTranslatedRange(range);
+    saveReadingScrollY(window.scrollY);
+  };
 
   const handleSwapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
     setText('');
     setShowInput(true);
+    setLastTranslatedRange(null);
+    setSavedScrollY(null);
+    setHasRestoredScroll(false);
     saveViewState(true);
+    clearReadingScrollY();
+    clearLastTranslatedRange();
   };
 
   const handleSubmit = () => {
@@ -43,6 +90,11 @@ export default function Home() {
       setShowInput(false);
       saveInputText(text);  // Save text as is
       saveViewState(false);
+      setLastTranslatedRange(null);
+      setSavedScrollY(null);
+      setHasRestoredScroll(false);
+      clearReadingScrollY();
+      clearLastTranslatedRange();
     }
   };
 
@@ -50,8 +102,13 @@ export default function Home() {
     setText('');
     setShowInput(true);
     setActiveWordIndex(null);
+    setLastTranslatedRange(null);
+    setSavedScrollY(null);
+    setHasRestoredScroll(false);
     saveInputText('');
     saveViewState(true);
+    clearReadingScrollY();
+    clearLastTranslatedRange();
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -64,6 +121,11 @@ export default function Home() {
     setText(content);
     saveInputText(content);
     setShowContentSelector(false);
+    setLastTranslatedRange(null);
+    setSavedScrollY(null);
+    setHasRestoredScroll(false);
+    clearReadingScrollY();
+    clearLastTranslatedRange();
   };
 
   // Split text preserving newlines and multiple spaces
@@ -195,24 +257,38 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
-              <div className="p-4 sm:p-8 bg-gray-50 rounded-xl shadow-sm 
-                border-2 border-gray-100 leading-relaxed 
-                text-base sm:text-lg min-h-[150px] sm:min-h-[200px] whitespace-pre-wrap">
-                {words.map(({ content, isWhitespace, key }) => 
-                  isWhitespace ? (
-                    <span key={key}>{content}</span>
+              <div
+                id="reading-content"
+                className="p-4 sm:p-8 bg-gray-50 rounded-xl shadow-sm 
+                  border-2 border-gray-100 leading-relaxed 
+                  text-base sm:text-lg min-h-[150px] sm:min-h-[200px] whitespace-pre-wrap"
+              >
+                {words.map(({ content, isWhitespace, key }) => {
+                  const isLastTranslated = !!lastTranslatedRange && key >= lastTranslatedRange.start && key <= lastTranslatedRange.end;
+
+                  return isWhitespace ? (
+                    <span
+                      key={key}
+                      data-token-index={key}
+                      className={isLastTranslated ? BACKGROUND_COLORS.LAST_TRANSLATED : undefined}
+                    >
+                      {content}
+                    </span>
                   ) : (
                     <TranslatableWord
                       key={key}
                       word={content}
+                      tokenIndex={key}
                       sourceLang={sourceLang}
                       targetLang={targetLang}
                       onHover={() => setActiveWordIndex(key)}
+                      onTranslated={(tokenIndex) => handleTranslatedRange({ start: tokenIndex, end: tokenIndex })}
                       isActive={activeWordIndex === key}
+                      isLastTranslated={isLastTranslated}
                       translationMode={translationMode}
                     />
-                  )
-                )}
+                  );
+                })}
               </div>
               <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
                 <button
@@ -236,6 +312,7 @@ export default function Home() {
         targetLang={targetLang}
         translationMode={translationMode}
         isInputMode={showInput}
+        onTranslated={handleTranslatedRange}
       />
     </main>
   );
