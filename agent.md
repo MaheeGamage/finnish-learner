@@ -279,3 +279,4 @@ See [.agent/README.md](.agent/README.md) for the session log format.
 |---|---|---|
 | [session-001](.agent/sessions/session-001.md) | 2026-02-21 | Initial agent infrastructure setup — created `agent.md` and `.agent/` session log system |
 | [session-002](.agent/sessions/session-002.md) | 2026-02-21 | Added reading resume and last-translated marker (persisted via localStorage) |
+| [session-003](.agent/sessions/session-003.md) | 2026-02-21 | Fixed mobile touch selection conflict with word tooltip (short-tap only) |
