@@ -34,6 +34,8 @@ This ensures continuity between sessions with minimal re-explanation from the de
 3. Update `agent.md`'s session history table with a one-line summary once the session is done.
 4. Fill in **Work Done**, **Decisions Made**, and **Open / Next Steps** before ending the session.
 
+**Important:** Use exactly one session file per conversation. If new work is requested in the same conversation, append updates to the existing `session-NNN.md` instead of creating a new session file.
+
 ---
 
 ## Naming Convention

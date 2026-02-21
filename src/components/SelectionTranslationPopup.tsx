@@ -10,6 +10,7 @@ interface SelectionTranslationPopupProps {
   targetLang: 'en' | 'fi';
   translationMode: TranslationMode;
   isInputMode: boolean;
+  onTranslated: (range: { start: number; end: number }) => void;
 }
 
 export default function SelectionTranslationPopup({
@@ -17,6 +18,7 @@ export default function SelectionTranslationPopup({
   targetLang,
   translationMode,
   isInputMode,
+  onTranslated,
 }: SelectionTranslationPopupProps) {
   const [selectedText, setSelectedText] = useState('');
   const [selectedTranslation, setSelectedTranslation] = useState('');
@@ -27,7 +29,38 @@ export default function SelectionTranslationPopup({
   // Handle real-time text selection for subtitle popup
   useEffect(() => {
     let debounceTimer: NodeJS.Timeout;
-    
+
+    const getElementFromNode = (node: Node | null): Element | null => {
+      if (!node) return null;
+      return node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+    };
+
+    const getTokenIndexFromNode = (node: Node | null): number | null => {
+      const element = getElementFromNode(node);
+      if (!element) return null;
+      const tokenElement = element.closest?.('[data-token-index]');
+      if (!tokenElement) return null;
+      const rawValue = tokenElement.getAttribute('data-token-index');
+      if (!rawValue) return null;
+      const parsed = Number(rawValue);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const getTokenRangeFromSelection = (range: Range | undefined | null) => {
+      if (!range) return null;
+      const startIndex = getTokenIndexFromNode(range.startContainer);
+      const endIndex = getTokenIndexFromNode(range.endContainer);
+      if (startIndex === null || endIndex === null) return null;
+      return startIndex <= endIndex
+        ? { start: startIndex, end: endIndex }
+        : { start: endIndex, end: startIndex };
+    };
+
+    const isWithinReadingContent = (node: Node | null) => {
+      const element = getElementFromNode(node);
+      return !!element?.closest?.('#reading-content');
+    };
+
     const handleSelectionChange = async () => {
       if (translationMode === TRANSLATION_MODES.OFF || isInputMode) return;
       if (translationMode !== TRANSLATION_MODES.SELECTION && translationMode !== TRANSLATION_MODES.BOTH) return;
@@ -39,6 +72,14 @@ export default function SelectionTranslationPopup({
       // Exclude selections that might be from the popup itself or hover tooltips
       const range = selection?.getRangeAt(0);
       const container = range?.commonAncestorContainer;
+      if (!range || !isWithinReadingContent(container)) {
+        setShowSubtitlePopup(false);
+        setSelectedText('');
+        setSelectedTranslation('');
+        setIsTranslationLoading(false);
+        setIsError(false);
+        return;
+      }
       const isWithinPopup = container && (
         (container as Element).closest?.('.fixed.bottom-6') ||
         (container.parentElement as Element)?.closest?.('.fixed.bottom-6') ||
@@ -72,6 +113,7 @@ export default function SelectionTranslationPopup({
         setIsTranslationLoading(true);
         setIsError(false);
         setSelectedTranslation('');
+        const tokenRange = getTokenRangeFromSelection(range);
 
         // Debounce the translation request
         debounceTimer = setTimeout(async () => {
@@ -79,6 +121,9 @@ export default function SelectionTranslationPopup({
             const result = await translateWord(selectedText, sourceLang, targetLang);
             setSelectedTranslation(result);
             setIsTranslationLoading(false);
+            if (result && tokenRange) {
+              onTranslated(tokenRange);
+            }
           } catch (error) {
             console.error('Error translating selection:', error);
             setIsError(true);
@@ -103,7 +148,7 @@ export default function SelectionTranslationPopup({
         clearTimeout(debounceTimer);
       }
     };
-  }, [sourceLang, targetLang, translationMode, isInputMode]);
+  }, [sourceLang, targetLang, translationMode, isInputMode, onTranslated]);
 
   if (!showSubtitlePopup) return null;
 

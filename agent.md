@@ -77,9 +77,11 @@ Browser (Next.js SSR + Client Components)
 
 **State lives entirely in `page.tsx`** — no Redux, no Zustand, no Context. Props are drilled down. This is intentional for simplicity.
 
-**Persistence** uses two `localStorage` keys:
+**Persistence** uses `localStorage` keys:
 - `finnish_learning_input_text` — the raw text (preserves whitespace exactly)
 - `finnish_learning_view_state` — boolean: `true` = input mode, `false` = learning mode
+- `finnish_learning_scroll_y` — last saved reading scroll position (only saved on actual translation)
+- `finnish_learning_last_translated_range` — `{start,end}` token index range of the last translated word/phrase
 
 ---
 
@@ -137,6 +139,11 @@ Current content files:
 ### 4.6 Text Tokenisation
 
 Text is split with `/(\s+)/g` — whitespace tokens are rendered as plain `<span>` elements, non-whitespace as `<TranslatableWord>`. This preserves newlines and multiple spaces exactly.
+
+### 4.7 Reading Resume & Last Translated Marker
+
+- The reading view restores scroll position using `finnish_learning_scroll_y` (saved when an actual translation occurs).
+- The last translated word/phrase is highlighted with a distinct background color using the stored token range.
 
 ---
 
@@ -271,3 +278,4 @@ See [.agent/README.md](.agent/README.md) for the session log format.
 | Session | Date | Summary |
 |---|---|---|
 | [session-001](.agent/sessions/session-001.md) | 2026-02-21 | Initial agent infrastructure setup — created `agent.md` and `.agent/` session log system |
+| [session-002](.agent/sessions/session-002.md) | 2026-02-21 | Added reading resume and last-translated marker (persisted via localStorage) |
