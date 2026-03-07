@@ -173,7 +173,8 @@ export default function Home() {
           <>
           <div className="flex flex-col gap-3 sm:gap-4">
             {/* Language Controls */}
-            <div className="grid grid-cols-3 sm:flex items-center justify-center gap-2 sm:gap-4">
+            {/* Removed this langage selection since current plan is to develop this mainly for finnish learning purposes */}
+            {/* <div className="grid grid-cols-3 sm:flex items-center justify-center gap-2 sm:gap-4">
               <select
                 value={sourceLang}
                 onChange={(e) => setSourceLang(e.target.value as 'en' | 'fi')}
@@ -201,7 +202,7 @@ export default function Home() {
                 <option value="en">English</option>
                 <option value="fi">Finnish</option>
               </select>
-            </div>
+            </div> */}
 
             {/* Translation Mode */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-center">
