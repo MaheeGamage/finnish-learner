@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { translateWord } from '@/utils/translator';
 import { hasTextSelection } from '@/utils/textUtils';
+import { recordLookup } from '@/utils/vocabStorage';
 import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
 
 interface TranslatableWordProps {
@@ -92,6 +93,9 @@ export default function TranslatableWord({
             if (!result) return;
             
             setTranslation(result);
+            if (result !== 'Translation error') {
+                recordLookup(text, result, sourceLang, targetLang);
+            }
             onTranslated(tokenIndex);
             // Calculate position while tooltip is invisible
             requestAnimationFrame(() => {

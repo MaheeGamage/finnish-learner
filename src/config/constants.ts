@@ -1,4 +1,4 @@
-export const TRANSLATION_DELAY_MS = 100; // Delay before translation starts
+export const TRANSLATION_DELAY_MS = 500; // Delay before translation starts
 
 export const TEXT_COLORS = {
     DEFAULT: 'text-gray-800',  // Default text color for better visibility

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { SELECTION_CONFIG, TRANSLATION_CONFIG } from '@/config/selectionConfig';
 import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
 import { translateWord } from '@/utils/translator';
+import { recordLookup } from '@/utils/vocabStorage';
 
 interface SelectionTranslationPopupProps {
   sourceLang: 'en' | 'fi';
@@ -123,6 +124,9 @@ export default function SelectionTranslationPopup({
             setIsTranslationLoading(false);
             if (result && tokenRange) {
               onTranslated(tokenRange);
+            }
+            if (result && result !== 'Translation error') {
+              recordLookup(selectedText, result, sourceLang, targetLang);
             }
           } catch (error) {
             console.error('Error translating selection:', error);

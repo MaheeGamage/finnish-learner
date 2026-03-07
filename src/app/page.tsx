@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import TranslatableWord from '@/components/TranslatableWord';
 import ContentSelector from '@/components/ContentSelector';
 import SelectionTranslationPopup from '@/components/SelectionTranslationPopup';
+import VocabDashboard from '@/components/VocabDashboard';
 import { BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
 import { 
   saveInputText, 
@@ -27,6 +28,7 @@ export default function Home() {
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [translationMode, setTranslationMode] = useState<TranslationMode>(TRANSLATION_MODES.BOTH);
   const [showContentSelector, setShowContentSelector] = useState(false);
+  const [showVocab, setShowVocab] = useState(false);
   const [lastTranslatedRange, setLastTranslatedRange] = useState<LastTranslatedRange | null>(null);
   const [savedScrollY, setSavedScrollY] = useState<number | null>(null);
   const [hasRestoredScroll, setHasRestoredScroll] = useState(false);
@@ -144,7 +146,31 @@ export default function Home() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center">
             Finnish Learning Assistant
           </h1>
-          
+
+          {/* Mode Tabs */}
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={() => setShowVocab(false)}
+              className={`px-4 py-1.5 text-sm rounded-lg transition-colors ${
+                !showVocab ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Read
+            </button>
+            <button
+              onClick={() => setShowVocab(true)}
+              className={`px-4 py-1.5 text-sm rounded-lg transition-colors ${
+                showVocab ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Vocab
+            </button>
+          </div>
+
+          {showVocab ? (
+            <VocabDashboard />
+          ) : (
+          <>
           <div className="flex flex-col gap-3 sm:gap-4">
             {/* Language Controls */}
             <div className="grid grid-cols-3 sm:flex items-center justify-center gap-2 sm:gap-4">
@@ -303,17 +329,21 @@ export default function Home() {
               </div>
             </div>
           )}
+          </>
+          )}
         </div>
       </div>
 
       {/* Subtitle-Style Translation Popup */}
-      <SelectionTranslationPopup
-        sourceLang={sourceLang}
-        targetLang={targetLang}
-        translationMode={translationMode}
-        isInputMode={showInput}
-        onTranslated={handleTranslatedRange}
-      />
+      {!showVocab && (
+        <SelectionTranslationPopup
+          sourceLang={sourceLang}
+          targetLang={targetLang}
+          translationMode={translationMode}
+          isInputMode={showInput}
+          onTranslated={handleTranslatedRange}
+        />
+      )}
     </main>
   );
 }
