@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
-import type { TranslationEvent, AggregatedTranslation, SessionSummaryExport } from '@/types/session';
+import { useState, useMemo } from 'react';
+import type { TranslationEvent } from '@/types/session';
+import { aggregateTranslations } from '@/utils/sessionExport';
 
 interface SessionSummaryProps {
   translations: TranslationEvent[];
@@ -11,90 +12,6 @@ interface SessionSummaryProps {
   contentSnippet: string;
 }
 
-function aggregateTranslations(events: TranslationEvent[]): AggregatedTranslation[] {
-  const map = new Map<string, AggregatedTranslation>();
-
-  for (const event of events) {
-    // Group by lowercased word so "Helsinki" and "helsinki" are counted together.
-    // The display word is taken from the first occurrence's original casing
-    // (i.e. the first time the word was translated in this session).
-    const key = event.word.toLowerCase();
-    const existing = map.get(key);
-    if (existing) {
-      existing.count += 1;
-      existing.lastTranslatedAt = event.timestamp;
-      // Prefer selection as the stored type when it occurs, because a selection
-      // represents a more deliberate translation request than a hover.
-      if (event.type === 'selection') {
-        existing.type = 'selection';
-      }
-    } else {
-      map.set(key, {
-        word: event.word,
-        translation: event.translation,
-        type: event.type,
-        count: 1,
-        firstTranslatedAt: event.timestamp,
-        lastTranslatedAt: event.timestamp,
-      });
-    }
-  }
-
-  return Array.from(map.values()).sort((a, b) => b.count - a.count);
-}
-
-function buildExport(
-  translations: TranslationEvent[],
-  sessionStart: number | null,
-  sourceLang: string,
-  targetLang: string,
-  contentSnippet: string,
-): SessionSummaryExport {
-  const sessionEnd = Date.now();
-  const start = sessionStart ?? sessionEnd;
-  const durationMs = sessionEnd - start;
-  const durationMinutes = Math.round((durationMs / 60000) * 10) / 10;
-
-  const aggregated = aggregateTranslations(translations);
-  const hoverCount = translations.filter((e) => e.type === 'hover').length;
-  const selectionCount = translations.filter((e) => e.type === 'selection').length;
-  const avgTranslationsPerMinute =
-    durationMinutes > 0 ? Math.round((translations.length / durationMinutes) * 10) / 10 : 0;
-
-  const sessionId = `session-${start}`;
-
-  return {
-    sessionId,
-    sessionStart: new Date(start).toISOString(),
-    sessionEnd: new Date(sessionEnd).toISOString(),
-    durationMinutes,
-    sourceLang,
-    targetLang,
-    contentSnippet,
-    stats: {
-      totalTranslationEvents: translations.length,
-      uniqueWordsTranslated: aggregated.length,
-      hoverTranslations: hoverCount,
-      selectionTranslations: selectionCount,
-      avgTranslationsPerMinute,
-    },
-    mostTranslatedWords: aggregated.slice(0, 10).map((a) => ({
-      word: a.word,
-      translation: a.translation,
-      count: a.count,
-      type: a.type,
-    })),
-    allTranslations: aggregated.map((a) => ({
-      word: a.word,
-      translation: a.translation,
-      type: a.type,
-      count: a.count,
-      firstSeenAt: new Date(a.firstTranslatedAt).toISOString(),
-      lastSeenAt: new Date(a.lastTranslatedAt).toISOString(),
-    })),
-  };
-}
-
 export default function SessionSummary({
   translations,
   sessionStart,
@@ -102,6 +19,7 @@ export default function SessionSummary({
   targetLang,
   contentSnippet,
 }: SessionSummaryProps) {
+  const [isExporting, setIsExporting] = useState(false);
   const aggregated = useMemo(() => aggregateTranslations(translations), [translations]);
 
   const hoverCount = translations.filter((e) => e.type === 'hover').length;
@@ -115,16 +33,33 @@ export default function SessionSummary({
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   })();
 
-  const handleExport = () => {
-    const data = buildExport(translations, sessionStart, sourceLang, targetLang, contentSnippet);
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${data.sessionId}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ translations, sessionStart, sourceLang, targetLang, contentSnippet }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to export session:', await response.text());
+        return;
+      }
+
+      const blob = await response.blob();
+      const filename =
+        response.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1] ??
+        'session.json';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (translations.length === 0) {
@@ -203,12 +138,13 @@ export default function SessionSummary({
       <div className="flex justify-end pt-1">
         <button
           onClick={handleExport}
+          disabled={isExporting}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white 
             text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors 
-            shadow-sm hover:shadow-md"
+            shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <span>⬇️</span>
-          Export Session JSON
+          <span>{isExporting ? '⏳' : '⬇️'}</span>
+          {isExporting ? 'Exporting…' : 'Export Session JSON'}
         </button>
       </div>
     </div>
