@@ -11,6 +11,7 @@ interface SelectionTranslationPopupProps {
   translationMode: TranslationMode;
   isInputMode: boolean;
   onTranslated: (range: { start: number; end: number }) => void;
+  onSelectionTranslated?: (word: string, translation: string, type: 'selection') => void;
 }
 
 export default function SelectionTranslationPopup({
@@ -19,6 +20,7 @@ export default function SelectionTranslationPopup({
   translationMode,
   isInputMode,
   onTranslated,
+  onSelectionTranslated,
 }: SelectionTranslationPopupProps) {
   const [selectedText, setSelectedText] = useState('');
   const [selectedTranslation, setSelectedTranslation] = useState('');
@@ -123,6 +125,9 @@ export default function SelectionTranslationPopup({
             setIsTranslationLoading(false);
             if (result && tokenRange) {
               onTranslated(tokenRange);
+              if (result !== TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR) {
+                onSelectionTranslated?.(selectedText, result, 'selection');
+              }
             }
           } catch (error) {
             console.error('Error translating selection:', error);
@@ -148,7 +153,7 @@ export default function SelectionTranslationPopup({
         clearTimeout(debounceTimer);
       }
     };
-  }, [sourceLang, targetLang, translationMode, isInputMode, onTranslated]);
+  }, [sourceLang, targetLang, translationMode, isInputMode, onTranslated, onSelectionTranslated]);
 
   if (!showSubtitlePopup) return null;
 

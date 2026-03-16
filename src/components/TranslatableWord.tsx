@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { translateWord } from '@/utils/translator';
 import { hasTextSelection } from '@/utils/textUtils';
 import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
+import { TRANSLATION_CONFIG } from '@/config/selectionConfig';
 
 interface TranslatableWordProps {
     word: string;
@@ -10,6 +11,7 @@ interface TranslatableWordProps {
     targetLang: 'en' | 'fi';
     onHover: () => void;
     onTranslated: (tokenIndex: number) => void;
+    onWordTranslated?: (word: string, translation: string, type: 'hover') => void;
     isActive: boolean;
     isLastTranslated: boolean;
     translationMode: TranslationMode;
@@ -22,6 +24,7 @@ export default function TranslatableWord({
     targetLang, 
     onHover, 
     onTranslated,
+    onWordTranslated,
     isActive,
     isLastTranslated,
     translationMode 
@@ -96,6 +99,9 @@ export default function TranslatableWord({
             
             setTranslation(result);
             onTranslated(tokenIndex);
+            if (result !== TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR) {
+                onWordTranslated?.(text, result, 'hover');
+            }
             // Calculate position while tooltip is invisible
             requestAnimationFrame(() => {
                 updateTooltipPosition();
