@@ -22,7 +22,7 @@ export async function GET() {
       json = await fs.promises.readFile(SESSION_CACHE_PATH, 'utf8');
     } catch {
       return NextResponse.json(
-        { error: 'No session export available yet. Use the Export button first.' },
+        { error: 'No session data available yet. Start reading and translating words first.' },
         { status: 404 },
       );
     }

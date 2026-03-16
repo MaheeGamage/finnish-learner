@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { TranslationEvent } from '@/types/session';
 import { aggregateTranslations } from '@/utils/sessionExport';
 
@@ -20,8 +20,25 @@ export default function SessionSummary({
   contentSnippet,
 }: SessionSummaryProps) {
   const [isExporting, setIsExporting] = useState(false);
-  const [sessionSaved, setSessionSaved] = useState(false);
   const aggregated = useMemo(() => aggregateTranslations(translations), [translations]);
+
+  // Silently sync the current session to the server whenever the data changes so
+  // that GET /api/session always serves an up-to-date overview — even before the
+  // user explicitly clicks "Export". Debounced to avoid excessive API calls when
+  // translations are accumulating rapidly during an active reading session.
+  useEffect(() => {
+    if (translations.length === 0) return;
+    const timer = setTimeout(() => {
+      fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ translations, sessionStart, sourceLang, targetLang, contentSnippet }),
+      }).catch(() => {
+        // Silent sync — ignore errors; the export button will surface them if needed.
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [translations, sessionStart, sourceLang, targetLang, contentSnippet]);
 
   const hoverCount = translations.filter((e) => e.type === 'hover').length;
   const selectionCount = translations.filter((e) => e.type === 'selection').length;
@@ -58,7 +75,6 @@ export default function SessionSummary({
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      setSessionSaved(true);
     } finally {
       setIsExporting(false);
     }
@@ -138,18 +154,16 @@ export default function SessionSummary({
 
       {/* Export button + View JSON link */}
       <div className="flex items-center justify-end gap-3 pt-1">
-        {sessionSaved && (
-          <a
-            href="/api/session"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 border border-indigo-300 text-indigo-600
-              text-sm font-medium rounded-lg hover:bg-indigo-50 transition-colors"
-          >
-            <span>🔗</span>
-            View JSON
-          </a>
-        )}
+        <a
+          href="/api/session"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-4 py-2 border border-indigo-300 text-indigo-600
+            text-sm font-medium rounded-lg hover:bg-indigo-50 transition-colors"
+        >
+          <span>🔗</span>
+          View JSON
+        </a>
         <button
           onClick={handleExport}
           disabled={isExporting}
