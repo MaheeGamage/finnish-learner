@@ -5,8 +5,8 @@ export function aggregateTranslations(events: TranslationEvent[]): AggregatedTra
 
   for (const event of events) {
     // Group by lowercased word so "Helsinki" and "helsinki" are counted together.
-    // The display word is taken from the first occurrence's original casing
-    // (i.e. the first time the word was translated in this session).
+    // The display word preserves the casing of the first occurrence that created
+    // the map entry (i.e. the first time this word was seen in the session).
     const key = event.word.toLowerCase();
     const existing = map.get(key);
     if (existing) {

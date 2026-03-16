@@ -20,6 +20,7 @@ export default function SessionSummary({
   contentSnippet,
 }: SessionSummaryProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [sessionSaved, setSessionSaved] = useState(false);
   const aggregated = useMemo(() => aggregateTranslations(translations), [translations]);
 
   const hoverCount = translations.filter((e) => e.type === 'hover').length;
@@ -57,6 +58,7 @@ export default function SessionSummary({
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      setSessionSaved(true);
     } finally {
       setIsExporting(false);
     }
@@ -134,11 +136,24 @@ export default function SessionSummary({
         )}
       </div>
 
-      {/* Export button */}
-      <div className="flex justify-end pt-1">
+      {/* Export button + View JSON link */}
+      <div className="flex items-center justify-end gap-3 pt-1">
+        {sessionSaved && (
+          <a
+            href="/api/session"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2 border border-indigo-300 text-indigo-600
+              text-sm font-medium rounded-lg hover:bg-indigo-50 transition-colors"
+          >
+            <span>🔗</span>
+            View JSON
+          </a>
+        )}
         <button
           onClick={handleExport}
           disabled={isExporting}
+          aria-busy={isExporting}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white 
             text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors 
             shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
