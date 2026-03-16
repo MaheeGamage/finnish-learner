@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import TranslatableWord from '@/components/TranslatableWord';
 import ContentSelector from '@/components/ContentSelector';
 import SelectionTranslationPopup from '@/components/SelectionTranslationPopup';
-import { BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
+import SessionSummary from '@/components/SessionSummary';
+import { BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode, SESSION_CONTENT_SNIPPET_LENGTH } from '@/config/constants';
 import { 
   saveInputText, 
   getStoredInputText, 
@@ -16,8 +17,15 @@ import {
   getLastTranslatedRange,
   clearReadingScrollY,
   clearLastTranslatedRange,
+  saveSessionTranslations,
+  getSessionTranslations,
+  clearSessionTranslations,
+  saveSessionStart,
+  getSessionStart,
+  clearSessionStart,
   type LastTranslatedRange,
 } from '@/utils/textStorage';
+import type { TranslationEvent } from '@/types/session';
 
 export default function Home() {
   const [text, setText] = useState('');
@@ -30,6 +38,8 @@ export default function Home() {
   const [lastTranslatedRange, setLastTranslatedRange] = useState<LastTranslatedRange | null>(null);
   const [savedScrollY, setSavedScrollY] = useState<number | null>(null);
   const [hasRestoredScroll, setHasRestoredScroll] = useState(false);
+  const [sessionTranslations, setSessionTranslations] = useState<TranslationEvent[]>([]);
+  const [sessionStart, setSessionStart] = useState<number | null>(null);
 
   // Load saved text and view state when component mounts
   useEffect(() => {
@@ -37,6 +47,8 @@ export default function Home() {
     const savedViewState = getStoredViewState();
     const storedScrollY = getReadingScrollY();
     const storedLastTranslatedRange = getLastTranslatedRange();
+    const storedTranslations = getSessionTranslations();
+    const storedSessionStart = getSessionStart();
     
     if (savedText) {
       setText(savedText);
@@ -52,6 +64,14 @@ export default function Home() {
 
     if (storedLastTranslatedRange) {
       setLastTranslatedRange(storedLastTranslatedRange);
+    }
+
+    if (storedTranslations.length > 0) {
+      setSessionTranslations(storedTranslations);
+    }
+
+    if (storedSessionStart !== null) {
+      setSessionStart(storedSessionStart);
     }
   }, []);
 
@@ -72,6 +92,26 @@ export default function Home() {
     saveReadingScrollY(window.scrollY);
   };
 
+  const handleWordTranslated = useCallback((
+    word: string,
+    translation: string,
+    type: 'hover' | 'selection',
+  ) => {
+    const event: TranslationEvent = {
+      word,
+      translation,
+      sourceLang,
+      targetLang,
+      type,
+      timestamp: Date.now(),
+    };
+    setSessionTranslations((prev) => {
+      const updated = [...prev, event];
+      saveSessionTranslations(updated);
+      return updated;
+    });
+  }, [sourceLang, targetLang]);
+
   const handleSwapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
@@ -80,21 +120,30 @@ export default function Home() {
     setLastTranslatedRange(null);
     setSavedScrollY(null);
     setHasRestoredScroll(false);
+    setSessionTranslations([]);
+    setSessionStart(null);
     saveViewState(true);
     clearReadingScrollY();
     clearLastTranslatedRange();
+    clearSessionTranslations();
+    clearSessionStart();
   };
 
   const handleSubmit = () => {
     if (text) {  // Remove trim() to preserve whitespace
+      const now = Date.now();
       setShowInput(false);
       saveInputText(text);  // Save text as is
       saveViewState(false);
       setLastTranslatedRange(null);
       setSavedScrollY(null);
       setHasRestoredScroll(false);
+      setSessionTranslations([]);
+      setSessionStart(now);
       clearReadingScrollY();
       clearLastTranslatedRange();
+      clearSessionTranslations();
+      saveSessionStart(now);
     }
   };
 
@@ -105,10 +154,14 @@ export default function Home() {
     setLastTranslatedRange(null);
     setSavedScrollY(null);
     setHasRestoredScroll(false);
+    setSessionTranslations([]);
+    setSessionStart(null);
     saveInputText('');
     saveViewState(true);
     clearReadingScrollY();
     clearLastTranslatedRange();
+    clearSessionTranslations();
+    clearSessionStart();
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -283,6 +336,7 @@ export default function Home() {
                       targetLang={targetLang}
                       onHover={() => setActiveWordIndex(key)}
                       onTranslated={(tokenIndex) => handleTranslatedRange({ start: tokenIndex, end: tokenIndex })}
+                      onWordTranslated={handleWordTranslated}
                       isActive={activeWordIndex === key}
                       isLastTranslated={isLastTranslated}
                       translationMode={translationMode}
@@ -301,6 +355,15 @@ export default function Home() {
                   Clear Text
                 </button>
               </div>
+
+              {/* Session Summary */}
+              <SessionSummary
+                translations={sessionTranslations}
+                sessionStart={sessionStart}
+                sourceLang={sourceLang}
+                targetLang={targetLang}
+                contentSnippet={text.slice(0, SESSION_CONTENT_SNIPPET_LENGTH)}
+              />
             </div>
           )}
         </div>
@@ -313,6 +376,7 @@ export default function Home() {
         translationMode={translationMode}
         isInputMode={showInput}
         onTranslated={handleTranslatedRange}
+        onSelectionTranslated={handleWordTranslated}
       />
     </main>
   );
