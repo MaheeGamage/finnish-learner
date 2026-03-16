@@ -40,6 +40,7 @@ export default function Home() {
   const [hasRestoredScroll, setHasRestoredScroll] = useState(false);
   const [sessionTranslations, setSessionTranslations] = useState<TranslationEvent[]>([]);
   const [sessionStart, setSessionStart] = useState<number | null>(null);
+  const [learningView, setLearningView] = useState<'reading' | 'overview'>('reading');
 
   // Load saved text and view state when component mounts
   useEffect(() => {
@@ -122,6 +123,7 @@ export default function Home() {
     setHasRestoredScroll(false);
     setSessionTranslations([]);
     setSessionStart(null);
+    setLearningView('reading');
     saveViewState(true);
     clearReadingScrollY();
     clearLastTranslatedRange();
@@ -130,7 +132,7 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
-    if (text) {  // Remove trim() to preserve whitespace
+    if (text) {  // Don't trim() — preserve whitespace exactly as entered
       const now = Date.now();
       setShowInput(false);
       saveInputText(text);  // Save text as is
@@ -140,6 +142,7 @@ export default function Home() {
       setHasRestoredScroll(false);
       setSessionTranslations([]);
       setSessionStart(now);
+      setLearningView('reading');
       clearReadingScrollY();
       clearLastTranslatedRange();
       clearSessionTranslations();
@@ -156,6 +159,7 @@ export default function Home() {
     setHasRestoredScroll(false);
     setSessionTranslations([]);
     setSessionStart(null);
+    setLearningView('reading');
     saveInputText('');
     saveViewState(true);
     clearReadingScrollY();
@@ -310,71 +314,107 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
-              <div
-                id="reading-content"
-                className="p-4 sm:p-8 bg-gray-50 rounded-xl shadow-sm 
-                  border-2 border-gray-100 leading-relaxed 
-                  text-base sm:text-lg min-h-[150px] sm:min-h-[200px] whitespace-pre-wrap"
-              >
-                {words.map(({ content, isWhitespace, key }) => {
-                  const isLastTranslated = !!lastTranslatedRange && key >= lastTranslatedRange.start && key <= lastTranslatedRange.end;
-
-                  return isWhitespace ? (
-                    <span
-                      key={key}
-                      data-token-index={key}
-                      className={isLastTranslated ? BACKGROUND_COLORS.LAST_TRANSLATED : undefined}
-                    >
-                      {content}
-                    </span>
-                  ) : (
-                    <TranslatableWord
-                      key={key}
-                      word={content}
-                      tokenIndex={key}
-                      sourceLang={sourceLang}
-                      targetLang={targetLang}
-                      onHover={() => setActiveWordIndex(key)}
-                      onTranslated={(tokenIndex) => handleTranslatedRange({ start: tokenIndex, end: tokenIndex })}
-                      onWordTranslated={handleWordTranslated}
-                      isActive={activeWordIndex === key}
-                      isLastTranslated={isLastTranslated}
-                      translationMode={translationMode}
-                    />
-                  );
-                })}
-              </div>
-              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+              {/* View Toggle Tabs */}
+              <div className="flex rounded-xl overflow-hidden border-2 border-indigo-100 bg-indigo-50">
                 <button
-                  onClick={handleClear}
-                  className="px-6 py-2.5 bg-gray-200 
-                    text-gray-700 rounded-lg hover:bg-gray-300 
-                    transition-colors shadow-sm hover:shadow-md 
-                    text-base sm:text-lg font-medium"
+                  onClick={() => setLearningView('reading')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm sm:text-base font-medium transition-colors
+                    ${learningView === 'reading'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100'}`}
+                  aria-pressed={learningView === 'reading'}
                 >
-                  Clear Text
+                  <span>📖</span> Reading
+                </button>
+                <button
+                  onClick={() => setLearningView('overview')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm sm:text-base font-medium transition-colors
+                    ${learningView === 'overview'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100'}`}
+                  aria-pressed={learningView === 'overview'}
+                >
+                  <span>📊</span> Overview
+                  {sessionTranslations.length > 0 && (
+                    <span className="ml-1 text-xs bg-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded-full">
+                      {sessionTranslations.length}
+                    </span>
+                  )}
                 </button>
               </div>
 
-              {/* Session Summary */}
-              <SessionSummary
-                translations={sessionTranslations}
-                sessionStart={sessionStart}
-                sourceLang={sourceLang}
-                targetLang={targetLang}
-                contentSnippet={text.slice(0, SESSION_CONTENT_SNIPPET_LENGTH)}
-              />
+              {learningView === 'reading' ? (
+                <>
+                  {/* Reading Content */}
+                  <div
+                    id="reading-content"
+                    className="p-4 sm:p-8 bg-gray-50 rounded-xl shadow-sm 
+                      border-2 border-gray-100 leading-relaxed 
+                      text-base sm:text-lg min-h-[150px] sm:min-h-[200px] whitespace-pre-wrap"
+                  >
+                    {words.map(({ content, isWhitespace, key }) => {
+                      const isLastTranslated = !!lastTranslatedRange && key >= lastTranslatedRange.start && key <= lastTranslatedRange.end;
+
+                      return isWhitespace ? (
+                        <span
+                          key={key}
+                          data-token-index={key}
+                          className={isLastTranslated ? BACKGROUND_COLORS.LAST_TRANSLATED : undefined}
+                        >
+                          {content}
+                        </span>
+                      ) : (
+                        <TranslatableWord
+                          key={key}
+                          word={content}
+                          tokenIndex={key}
+                          sourceLang={sourceLang}
+                          targetLang={targetLang}
+                          onHover={() => setActiveWordIndex(key)}
+                          onTranslated={(tokenIndex) => handleTranslatedRange({ start: tokenIndex, end: tokenIndex })}
+                          onWordTranslated={handleWordTranslated}
+                          isActive={activeWordIndex === key}
+                          isLastTranslated={isLastTranslated}
+                          translationMode={translationMode}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                    <button
+                      onClick={handleClear}
+                      className="px-6 py-2.5 bg-gray-200 
+                        text-gray-700 rounded-lg hover:bg-gray-300 
+                        transition-colors shadow-sm hover:shadow-md 
+                        text-base sm:text-lg font-medium"
+                    >
+                      Clear Text
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Overview / Session Summary */
+                <div className="rounded-xl border-2 border-indigo-100 bg-white shadow-sm p-4 sm:p-6">
+                  <SessionSummary
+                    translations={sessionTranslations}
+                    sessionStart={sessionStart}
+                    sourceLang={sourceLang}
+                    targetLang={targetLang}
+                    contentSnippet={text.slice(0, SESSION_CONTENT_SNIPPET_LENGTH)}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Subtitle-Style Translation Popup */}
+      {/* Subtitle-Style Translation Popup — only active in reading view */}
       <SelectionTranslationPopup
         sourceLang={sourceLang}
         targetLang={targetLang}
         translationMode={translationMode}
-        isInputMode={showInput}
+        isInputMode={showInput || learningView === 'overview'}
         onTranslated={handleTranslatedRange}
         onSelectionTranslated={handleWordTranslated}
       />

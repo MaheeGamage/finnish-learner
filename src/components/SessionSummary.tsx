@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { TranslationEvent, AggregatedTranslation, SessionSummaryExport } from '@/types/session';
 
 interface SessionSummaryProps {
@@ -15,14 +15,16 @@ function aggregateTranslations(events: TranslationEvent[]): AggregatedTranslatio
   const map = new Map<string, AggregatedTranslation>();
 
   for (const event of events) {
-    // Group by lowercased word so "Helsinki" and "helsinki" are counted together;
-    // the display word is taken from the first occurrence's original casing.
+    // Group by lowercased word so "Helsinki" and "helsinki" are counted together.
+    // The display word is taken from the first occurrence's original casing
+    // (i.e. the first time the word was translated in this session).
     const key = event.word.toLowerCase();
     const existing = map.get(key);
     if (existing) {
       existing.count += 1;
       existing.lastTranslatedAt = event.timestamp;
-      // Prefer selection translation as the stored type if it occurred
+      // Prefer selection as the stored type when it occurs, because a selection
+      // represents a more deliberate translation request than a hover.
       if (event.type === 'selection') {
         existing.type = 'selection';
       }
@@ -100,8 +102,6 @@ export default function SessionSummary({
   targetLang,
   contentSnippet,
 }: SessionSummaryProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const aggregated = useMemo(() => aggregateTranslations(translations), [translations]);
 
   const hoverCount = translations.filter((e) => e.type === 'hover').length;
@@ -127,104 +127,90 @@ export default function SessionSummary({
     URL.revokeObjectURL(url);
   };
 
-  if (translations.length === 0) return null;
+  if (translations.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="text-4xl mb-3">📖</div>
+        <p className="text-gray-500 text-base">No translations yet.</p>
+        <p className="text-gray-400 text-sm mt-1">
+          Switch to Reading and hover over or select words to translate them.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-4 rounded-xl border-2 border-indigo-100 bg-white shadow-sm overflow-hidden">
-      {/* Header / Toggle */}
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full flex items-center justify-between px-4 sm:px-6 py-3 
-          bg-indigo-50 hover:bg-indigo-100 transition-colors text-left"
-        aria-expanded={isOpen}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-indigo-700 font-semibold text-sm sm:text-base">📊 Session Summary</span>
-          <span className="text-xs text-indigo-500 bg-indigo-100 px-2 py-0.5 rounded-full">
-            {translations.length} translation{translations.length !== 1 ? 's' : ''}
-          </span>
+    <div className="space-y-5">
+      {/* Stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Total Translations" value={String(translations.length)} />
+        <StatCard label="Unique Words" value={String(aggregated.length)} />
+        <StatCard label="Session Duration" value={sessionDurationLabel} />
+        <StatCard
+          label="Hover / Selection"
+          value={`${hoverCount} / ${selectionCount}`}
+        />
+      </div>
+
+      {/* Most translated words */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-600 mb-2">
+          Most Translated Words
+        </h3>
+        <div className="overflow-x-auto rounded-lg border border-gray-100">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                <th className="px-3 py-2 text-left font-medium">Word</th>
+                <th className="px-3 py-2 text-left font-medium">Translation</th>
+                <th className="px-3 py-2 text-center font-medium">Times</th>
+                <th className="px-3 py-2 text-center font-medium">Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {aggregated.slice(0, 10).map((item, idx) => (
+                <tr
+                  key={item.word}
+                  className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                >
+                  <td className="px-3 py-2 font-medium text-gray-800">{item.word}</td>
+                  <td className="px-3 py-2 text-indigo-600">{item.translation}</td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`inline-block min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full text-xs font-semibold
+                      ${item.count > 2 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {item.count}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full
+                      ${item.type === 'hover' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                      {item.type}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <span className="text-indigo-400 text-lg select-none" aria-hidden>
-          {isOpen ? '▲' : '▼'}
-        </span>
-      </button>
+        {aggregated.length > 10 && (
+          <p className="text-xs text-gray-400 mt-1 text-right">
+            +{aggregated.length - 10} more words translated
+          </p>
+        )}
+      </div>
 
-      {isOpen && (
-        <div className="px-4 sm:px-6 py-4 space-y-4">
-          {/* Stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Total Translations" value={String(translations.length)} />
-            <StatCard label="Unique Words" value={String(aggregated.length)} />
-            <StatCard label="Session Duration" value={sessionDurationLabel} />
-            <StatCard
-              label="Hover / Selection"
-              value={`${hoverCount} / ${selectionCount}`}
-            />
-          </div>
-
-          {/* Most translated words */}
-          {aggregated.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">
-                Most Translated Words
-              </h3>
-              <div className="overflow-x-auto rounded-lg border border-gray-100">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-                      <th className="px-3 py-2 text-left font-medium">Word</th>
-                      <th className="px-3 py-2 text-left font-medium">Translation</th>
-                      <th className="px-3 py-2 text-center font-medium">Times</th>
-                      <th className="px-3 py-2 text-center font-medium">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {aggregated.slice(0, 10).map((item, idx) => (
-                      <tr
-                        key={item.word}
-                        className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-                      >
-                        <td className="px-3 py-2 font-medium text-gray-800">{item.word}</td>
-                        <td className="px-3 py-2 text-indigo-600">{item.translation}</td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`inline-block min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full text-xs font-semibold
-                            ${item.count > 2 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
-                            {item.count}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full
-                            ${item.type === 'hover' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
-                            {item.type}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {aggregated.length > 10 && (
-                <p className="text-xs text-gray-400 mt-1 text-right">
-                  +{aggregated.length - 10} more words translated
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Export button */}
-          <div className="flex justify-end pt-1">
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white 
-                text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors 
-                shadow-sm hover:shadow-md"
-            >
-              <span>⬇️</span>
-              Export Session JSON
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Export button */}
+      <div className="flex justify-end pt-1">
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white 
+            text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors 
+            shadow-sm hover:shadow-md"
+        >
+          <span>⬇️</span>
+          Export Session JSON
+        </button>
+      </div>
     </div>
   );
 }
