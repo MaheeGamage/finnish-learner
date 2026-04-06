@@ -21,8 +21,8 @@ import {
 
 export default function Home() {
   const [text, setText] = useState('');
-  const [sourceLang, setSourceLang] = useState<'en' | 'fi'>('fi');
-  const [targetLang, setTargetLang] = useState<'en' | 'fi'>('en');
+  const [sourceLang, _setSourceLang] = useState<'en' | 'fi'>('fi');
+  const [targetLang, _setTargetLang] = useState<'en' | 'fi'>('en');
   const [showInput, setShowInput] = useState(true);
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [translationMode, setTranslationMode] = useState<TranslationMode>(TRANSLATION_MODES.BOTH);
@@ -72,19 +72,6 @@ export default function Home() {
     saveReadingScrollY(window.scrollY);
   };
 
-  const handleSwapLanguages = () => {
-    setSourceLang(targetLang);
-    setTargetLang(sourceLang);
-    setText('');
-    setShowInput(true);
-    setLastTranslatedRange(null);
-    setSavedScrollY(null);
-    setHasRestoredScroll(false);
-    saveViewState(true);
-    clearReadingScrollY();
-    clearLastTranslatedRange();
-  };
-
   const handleSubmit = () => {
     if (text) {  // Remove trim() to preserve whitespace
       setShowInput(false);
@@ -115,6 +102,12 @@ export default function Home() {
     const newText = e.target.value;
     setText(newText);  // Store text exactly as typed
     saveInputText(newText);
+  };
+
+  const handleSwapLanguages = () => {
+    const temp = sourceLang;
+    _setSourceLang(targetLang);
+    _setTargetLang(temp);
   };
   
   const handleContentSelect = (content: string) => {
@@ -150,7 +143,7 @@ export default function Home() {
             <div className="grid grid-cols-3 sm:flex items-center justify-center gap-2 sm:gap-4">
               <select
                 value={sourceLang}
-                onChange={(e) => setSourceLang(e.target.value as 'en' | 'fi')}
+                onChange={(e) => _setSourceLang(e.target.value as 'en' | 'fi')}
                 className="px-2 sm:px-4 py-2 text-sm sm:text-base rounded-lg border border-gray-200 
                   bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
@@ -168,7 +161,7 @@ export default function Home() {
               
               <select
                 value={targetLang}
-                onChange={(e) => setTargetLang(e.target.value as 'en' | 'fi')}
+                onChange={(e) => _setTargetLang(e.target.value as 'en' | 'fi')}
                 className="px-2 sm:px-4 py-2 text-sm sm:text-base rounded-lg border border-gray-200 
                   bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >

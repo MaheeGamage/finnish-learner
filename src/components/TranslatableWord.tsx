@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { translateWord } from '@/utils/translator';
+import { fetchRichTranslation } from '@/utils/richTranslationService';
+import { RichTranslation } from '@/types/richTranslation';
 import { hasTextSelection } from '@/utils/textUtils';
+import { recordLookup } from '@/utils/vocabStorage';
 import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
 
 interface TranslatableWordProps {
@@ -26,7 +28,7 @@ export default function TranslatableWord({
     isLastTranslated,
     translationMode 
 }: TranslatableWordProps) {
-    const [translation, setTranslation] = useState<string>('');
+    const [translation, setTranslation] = useState<RichTranslation | null>(null);
     const [isHighlighted, setIsHighlighted] = useState(false);
     const [tooltipPosition, setTooltipPosition] = useState<'top' | 'bottom'>('top');
     const [tooltipCoords, setTooltipCoords] = useState({ top: 0, left: 0 });
@@ -34,6 +36,43 @@ export default function TranslatableWord({
     const wordRef = useRef<HTMLSpanElement>(null);
     const tooltipRef = useRef<HTMLSpanElement>(null);
     const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+    /**
+     * Build the tooltip content for position calculation
+     */
+    const getTooltipContent = useCallback((trans: RichTranslation | null): string => {
+        if (!trans) return '';
+        
+        const parts: string[] = [];
+        
+        // Lemma with grammatical form if available
+        if (trans.lemma && trans.lemma !== trans.word) {
+            parts.push(trans.lemma);
+            if (trans.grammaticalForm) {
+                parts.push(`(${trans.grammaticalForm})`);
+            }
+        } else {
+            parts.push(trans.word);
+        }
+        
+        // Part of speech badge
+        if (trans.partOfSpeech) {
+            parts.push(`[${trans.partOfSpeech}]`);
+        }
+        
+        // Pronunciation
+        if (trans.pronunciation) {
+            parts.push(`📢 ${trans.pronunciation}`);
+        }
+        
+        // Definition or fallback
+        const definition = trans.definitions[0]?.text || trans.fallbackTranslation;
+        if (definition) {
+            parts.push(definition);
+        }
+        
+        return parts.join(' ');
+    }, []);
 
     const updateTooltipPosition = useCallback(() => {
         if (!wordRef.current || !isHighlighted) return;
@@ -45,11 +84,12 @@ export default function TranslatableWord({
             
             if (wordRect.width === 0) return;
             
-            // Pre-calculate tooltip dimensions based on text length
+            // Pre-calculate tooltip dimensions based on content
             const fontSize = 14; // text-sm in pixels
             const horizontalPadding = 16; // px-2 in pixels
+            const tooltipContent = getTooltipContent(translation);
             const estimatedTooltipWidth = Math.min(
-                translation.length * (fontSize * 0.6) + horizontalPadding,
+                tooltipContent.length * (fontSize * 0.5) + horizontalPadding,
                 viewportWidth * 0.8
             );
             const estimatedTooltipHeight = fontSize * 1.5 + 8; // Line height + vertical padding
@@ -83,15 +123,20 @@ export default function TranslatableWord({
         } catch (error) {
             console.error('Error updating tooltip position:', error);
         }
-    }, [isHighlighted, translation, isTooltipReady]);
+    }, [isHighlighted, translation, isTooltipReady, getTooltipContent]);
 
     const handleTranslation = async (text: string) => {
         try {
             setIsTooltipReady(false);
-            const result = await translateWord(text, sourceLang, targetLang);
+            const result = await fetchRichTranslation(text, sourceLang);
             if (!result) return;
             
             setTranslation(result);
+            // Record lookup with the best available translation
+            const displayText = result.definitions[0]?.text || result.fallbackTranslation;
+            if (displayText) {
+                recordLookup(text, displayText, sourceLang, targetLang);
+            }
             onTranslated(tokenIndex);
             // Calculate position while tooltip is invisible
             requestAnimationFrame(() => {
@@ -249,7 +294,34 @@ export default function TranslatableWord({
                     className="px-2 py-1 text-sm text-white bg-gray-800/90 rounded shadow-lg z-[9999] 
                         whitespace-nowrap pointer-events-none select-none backdrop-blur-[2px]"
                 >
-                    {translation}
+                    {/* Lemma line: word (form) [pos] */}
+                    <span className="font-medium">
+                        {translation.lemma && translation.lemma !== translation.word ? (
+                            <>
+                                {translation.lemma}
+                                {translation.grammaticalForm && (
+                                    <span className="text-gray-400 ml-1">({translation.grammaticalForm})</span>
+                                )}
+                            </>
+                        ) : (
+                            translation.word
+                        )}
+                        {translation.partOfSpeech && (
+                            <span className="text-blue-300 ml-1">[{translation.partOfSpeech}]</span>
+                        )}
+                    </span>
+                    
+                    {/* Pronunciation */}
+                    {translation.pronunciation && (
+                        <span className="text-gray-400 ml-2">📢 {translation.pronunciation}</span>
+                    )}
+                    
+                    {/* Definition or fallback */}
+                    {(translation.definitions[0]?.text || translation.fallbackTranslation) && (
+                        <span className="text-gray-200 ml-2">
+                            {translation.definitions[0]?.text || translation.fallbackTranslation}
+                        </span>
+                    )}
                 </span>
             )}
         </span>

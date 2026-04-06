@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { SELECTION_CONFIG, TRANSLATION_CONFIG } from '@/config/selectionConfig';
 import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
-import { translateWord } from '@/utils/translator';
+import { fetchRichTranslation } from '@/utils/richTranslationService';
+import { RichTranslation } from '@/types/richTranslation';
+import { recordLookup } from '@/utils/vocabStorage';
 
 interface SelectionTranslationPopupProps {
   sourceLang: 'en' | 'fi';
@@ -21,7 +23,7 @@ export default function SelectionTranslationPopup({
   onTranslated,
 }: SelectionTranslationPopupProps) {
   const [selectedText, setSelectedText] = useState('');
-  const [selectedTranslation, setSelectedTranslation] = useState('');
+  const [richTranslation, setRichTranslation] = useState<RichTranslation | null>(null);
   const [showSubtitlePopup, setShowSubtitlePopup] = useState(false);
   const [isTranslationLoading, setIsTranslationLoading] = useState(false);
   const [isError, setIsError] = useState(false);
@@ -75,7 +77,7 @@ export default function SelectionTranslationPopup({
       if (!range || !isWithinReadingContent(container)) {
         setShowSubtitlePopup(false);
         setSelectedText('');
-        setSelectedTranslation('');
+        setRichTranslation(null);
         setIsTranslationLoading(false);
         setIsError(false);
         return;
@@ -99,11 +101,11 @@ export default function SelectionTranslationPopup({
       if (selectedText && selectedText.length > SELECTION_CONFIG.MIN_SELECTION_LENGTH) {
         // Check if selection is too long
         if (selectedText.length > SELECTION_CONFIG.MAX_SELECTION_LENGTH) {
-          setSelectedText('');
+          setSelectedText(selectedText);
           setShowSubtitlePopup(true);
           setIsTranslationLoading(false);
           setIsError(true);
-          setSelectedTranslation(TRANSLATION_CONFIG.ERRORS.SELECTION_TOO_LONG);
+          setRichTranslation(null);
           return;
         }
 
@@ -112,22 +114,28 @@ export default function SelectionTranslationPopup({
         setShowSubtitlePopup(true);
         setIsTranslationLoading(true);
         setIsError(false);
-        setSelectedTranslation('');
+        setRichTranslation(null);
         const tokenRange = getTokenRangeFromSelection(range);
 
         // Debounce the translation request
         debounceTimer = setTimeout(async () => {
           try {
-            const result = await translateWord(selectedText, sourceLang, targetLang);
-            setSelectedTranslation(result);
+            const result = await fetchRichTranslation(selectedText, sourceLang);
+            setRichTranslation(result);
             setIsTranslationLoading(false);
             if (result && tokenRange) {
               onTranslated(tokenRange);
             }
+            // Record lookup for vocabulary tracking
+            const translationText = result.fallbackTranslation || 
+              result.definitions.map(d => d.text).join(', ') || '';
+            if (translationText && translationText !== 'Translation error') {
+              recordLookup(selectedText, translationText, sourceLang, targetLang);
+            }
           } catch (error) {
             console.error('Error translating selection:', error);
             setIsError(true);
-            setSelectedTranslation(TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR);
+            setRichTranslation(null);
             setIsTranslationLoading(false);
           }
         }, SELECTION_CONFIG.DEBOUNCE_DELAY);
@@ -135,7 +143,7 @@ export default function SelectionTranslationPopup({
         // No selection - hide popup immediately
         setShowSubtitlePopup(false);
         setSelectedText('');
-        setSelectedTranslation('');
+        setRichTranslation(null);
         setIsTranslationLoading(false);
         setIsError(false);
       }
@@ -152,53 +160,119 @@ export default function SelectionTranslationPopup({
 
   if (!showSubtitlePopup) return null;
 
+  // Helper to render rich translation content
+  const renderRichContent = () => {
+    if (!richTranslation) return null;
+    
+    const isFallback = richTranslation.source === 'fallback';
+    
+    return (
+      <div className="flex flex-col gap-2 w-full">
+        {/* Word header with lemma and part of speech */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Show lemma if different from selected word */}
+          {richTranslation.lemma && richTranslation.lemma !== selectedText ? (
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-sm sm:text-base font-medium text-blue-200">
+                {richTranslation.lemma}
+              </span>
+              {richTranslation.grammaticalForm && (
+                <span className="text-xs sm:text-sm text-gray-400">
+                  ({richTranslation.grammaticalForm})
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-sm sm:text-base font-medium text-blue-200">
+              {selectedText}
+            </span>
+          )}
+          
+          {/* Part of speech badge */}
+          {richTranslation.partOfSpeech && (
+            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/30 text-blue-200">
+              {richTranslation.partOfSpeech}
+            </span>
+          )}
+        </div>
+        
+        {/* Pronunciation */}
+        {richTranslation.pronunciation && (
+          <div className="text-xs sm:text-sm text-gray-300 flex items-center gap-1">
+            <span>📢</span>
+            <span>{richTranslation.pronunciation}</span>
+          </div>
+        )}
+        
+        {/* Definitions and examples (not for fallback) */}
+        {!isFallback && richTranslation.definitions.length > 0 && (
+          <div className="flex flex-col gap-1.5 mt-1">
+            {richTranslation.definitions.slice(0, 3).map((def, idx) => (
+              <div key={idx} className="flex flex-col gap-1">
+                <div className="text-sm sm:text-base text-white">
+                  <span className="text-gray-400 mr-1">{idx + 1}.</span>
+                  {def.text}
+                </div>
+                {/* Examples under definition */}
+                {def.examples.slice(0, 2).map((ex, exIdx) => (
+                  <div key={exIdx} className="ml-4 text-xs sm:text-sm text-gray-400 italic">
+                    <div>&ldquo;{ex.text}&rdquo;</div>
+                    {ex.translation && (
+                      <div className="text-gray-500 not-italic">
+                        ({ex.translation})
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Fallback translation */}
+        {isFallback && richTranslation.fallbackTranslation && (
+          <div className="text-sm sm:text-base text-white">
+            {richTranslation.fallbackTranslation}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in subtitle-popup px-2 sm:px-0">
       <div className="bg-black/80 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg shadow-2xl backdrop-blur-sm 
         w-[95vw] sm:w-[85vw] md:w-[75vw] lg:w-[65vw] xl:w-[55vw] max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
-          {!isError ? (
-            <>
-              {/* Original Text */}
-              <div className="flex-1 text-center sm:text-left min-w-0 w-full sm:w-auto">
-                <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1">
-                  {sourceLang.toUpperCase()}
-                </div>
-                <div className="text-sm sm:text-base font-medium break-words">
-                  &ldquo;{selectedText}&rdquo;
-                </div>
-              </div>
-              
-              {/* Arrow/Divider */}
-              <div className="hidden sm:block text-gray-400 mx-2 flex-shrink-0">→</div>
-              <div className="sm:hidden w-full border-t border-gray-600 my-1"></div>
-              
-              {/* Translation */}
-              <div className="flex-1 text-center sm:text-right min-w-0 w-full sm:w-auto">
-                <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1">
-                  {targetLang.toUpperCase()}
-                </div>
-                {isTranslationLoading ? (
-                  <div className="flex items-center justify-center sm:justify-end space-x-2">
-                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
-                    <span className="text-xs sm:text-sm text-gray-300">{TRANSLATION_CONFIG.LOADING_TEXT}</span>
-                  </div>
-                ) : (
-                  <div className="text-sm sm:text-base font-medium text-blue-200 break-words">
-                    &ldquo;{selectedTranslation}&rdquo;
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            /* Error message only */
-            <div className="flex-1 text-center w-full">
-              <div className="text-sm sm:text-base font-medium text-red-300 break-words">
-                {selectedTranslation}
-              </div>
+        {!isError ? (
+          <>
+            {/* Original Text Header */}
+            <div className="text-xs text-gray-400 mb-1">
+              {sourceLang.toUpperCase()} → {targetLang.toUpperCase()}
             </div>
-          )}
-        </div>
+            
+            {/* Selected word */}
+            <div className="text-sm sm:text-base font-medium text-gray-200 mb-2">
+              &ldquo;{selectedText}&rdquo;
+            </div>
+            
+            {/* Translation content */}
+            {isTranslationLoading ? (
+              <div className="flex items-center gap-2 py-2">
+                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                <span className="text-xs sm:text-sm text-gray-300">{TRANSLATION_CONFIG.LOADING_TEXT}</span>
+              </div>
+            ) : (
+              renderRichContent()
+            )}
+          </>
+        ) : (
+          /* Error message */
+          <div className="text-sm sm:text-base font-medium text-red-300">
+            {selectedText.length > SELECTION_CONFIG.MAX_SELECTION_LENGTH 
+              ? TRANSLATION_CONFIG.ERRORS.SELECTION_TOO_LONG 
+              : TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR}
+          </div>
+        )}
       </div>
     </div>
   );
