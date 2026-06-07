@@ -3,6 +3,8 @@
 > This file is the **primary onboarding document** for any AI agent working on this repository.
 > Read this before making any changes. It describes what the app is, why it exists, how it works, and what conventions to follow.
 
+This project follows project management template resides in .project. Check .project/README.md first.
+
 ---
 
 ## Table of Contents
