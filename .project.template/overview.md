@@ -1,0 +1,39 @@
+<!-- Overview — the entry point. Read this first to orient.
+     A DERIVED view of goals/ + tasks/, which are the source of truth. Hand-kept
+     for now; a script may generate it later, but it must stay hand-maintainable
+     (no tool required). Only "## Project" is authored — everything else mirrors
+     the goal/task files and is regenerable; never trust it over those files. -->
+
+## Project
+<!-- 1-2 authored sentences: what this effort is about. The only hand-written part. -->
+
+## Goals
+<!-- Each active or drafting goal as a heading; achieved/superseded goals are
+     historical and omitted. Under each goal, its open tasks with status inline
+     (`in-review` = waiting on a human). Done tasks are excluded.
+
+     Example:
+
+     ### [[001-knowledge-search]] — active
+     - [[survey-existing-tools]] — in-progress
+     - [[draft-architecture]] — in-review
+     - [[compare-frameworks]] — to-do
+
+     ### [[002-future-goal]] — drafting
+-->
+
+## Output locations
+<!-- Authored (not derived): a high-level map of where each KIND of output is
+     saved for this project — not a list of individual files. The agent reads this
+     to know where to save new outputs, and asks the human only when a kind isn't
+     covered yet (proposing a sensible default), then records the answer here so it
+     never asks again. Paths are relative to the project root (the parent of
+     .project/).
+
+     Example:
+     - Code → project root
+     - System design / diagrams → /docs/diagram
+     - Research findings → /docs/research
+
+     Per-file links to what was actually produced live in each task's `Outputs`
+     section, not here. -->

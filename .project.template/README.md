@@ -1,0 +1,67 @@
+# .project/ — how this project is run
+
+This folder is the project's brain: a small set of plain-markdown files that take an idea
+from start to done, for humans and AI together. **The files are the source of truth** — not
+any chat history — so work can pause and resume across sessions, tools, and AI providers.
+
+**New here? Read `overview.md` first.** It's the entry point — a glance at the project and
+its open work. (Each artifact explains *itself* in the comments inside its file/template;
+this glue only covers how the pieces fit together.)
+
+## Layout
+
+```
+.project/
+├── overview.md      Entry view, read first. Authored summary + Output locations,
+│                    plus a derived status of goals and their open tasks.
+├── constraints.md   The living list of current constraints/assumptions that bound the work.
+├── goals/           One file per goal (001-slug.md): a target + how you'll know it's met.
+├── tasks/           One file per task (slug.md): the work that moves a goal forward.
+├── decisions/       One file per significant decision (001-slug.md): an immutable record
+│                    of a hard-to-reverse choice between real alternatives.
+└── templates/       Blank templates to copy when creating a new goal / task / decision.
+```
+
+`goals/` + `tasks/` are the source of truth; `overview.md` is a mostly-derived view of them.
+
+## Conventions
+
+- **Naming** — goals and decisions are numbered + slugged (`001-knowledge-search.md`);
+  tasks are slug-only (`survey-existing-tools.md`). Titles come from filenames.
+- **Links** — use `[[wikilinks]]` to connect files (a task's `goal:`, a constraint's origin,
+  an output, a superseding decision).
+- **Source of truth** — trust the goal/task files over the Overview; the Overview is
+  regenerable from them.
+- **Current focus** — the `in-progress` task(s) are "what's next." Keep few in progress at
+  once (ideally one per owner).
+- **Requirement vs constraint vs decision** — a desired outcome → a goal's *Success criteria*;
+  a given bound → `constraints.md`; a hard-to-reverse choice between real alternatives → a
+  `decisions/` record. Everything reversible or trivial stays in a task's `Log`.
+
+## Workflow — the loop
+
+1. **Start** — dump your rough idea, refine it into the first goal (`goals/001-*.md`,
+   `draft` → `active`). Put any given constraints in `constraints.md`.
+2. **Plan** — break the goal into tasks (`tasks/*.md`), each linked to the goal.
+3. **Do** — work a task; capture progress, minor decisions, and steering in its `Log`, and
+   list what it produced in its `Outputs`. A significant decision graduates to `decisions/`.
+4. **Re-evaluate** — compare the outputs to the goal's Success criteria. More work → continue
+   or add tasks. Criteria met → the goal goes `achieved` and its `Outcome` is recorded. The
+   goal must change → write a new goal (the old one becomes `superseded`).
+5. **Resume anytime** — open `overview.md`, read the status at a glance, pick up the
+   `in-progress` task. No chat history required.
+
+## Creating a new artifact
+
+Copy the matching template and fill it (its comments guide you, then delete them):
+
+- New goal → `templates/goal.md` → `goals/NNN-slug.md`
+- New task → `templates/task.md` → `tasks/slug.md`
+- New decision → `templates/decision.md` → `decisions/NNN-slug.md`
+
+`overview.md` and `constraints.md` already exist — edit them in place.
+
+## Principles
+
+Minimal core; generic for any project (domain-specific needs are optional layers);
+file-based (no tool required); human in control (AI assists, the human directs).
