@@ -93,29 +93,29 @@ export default function Home() {
     saveReadingScrollY(window.scrollY);
   };
 
-  const handleWordTranslated = useCallback((
-    word: string,
-    translation: string,
-    type: 'hover' | 'selection',
-  ) => {
-    const event: TranslationEvent = {
-      word,
-      translation,
-      sourceLang,
-      targetLang,
-      type,
-      timestamp: Date.now(),
-    };
-    setSessionTranslations((prev) => {
-      const updated = [...prev, event];
-      saveSessionTranslations(updated);
-      return updated;
-    });
-  }, [sourceLang, targetLang]);
+  const handleWordTranslated = useCallback(
+    (word: string, translation: string, type: 'hover' | 'selection') => {
+      const event: TranslationEvent = {
+        word,
+        translation,
+        sourceLang,
+        targetLang,
+        type,
+        timestamp: Date.now(),
+      };
+      setSessionTranslations((prev) => {
+        const updated = [...prev, event];
+        saveSessionTranslations(updated);
+        return updated;
+      });
+    },
+    [sourceLang, targetLang]
+  );
 
   const handleSwapLanguages = () => {
-    setSourceLang(targetLang);
-    setTargetLang(sourceLang);
+    const temp = sourceLang;
+    _setSourceLang(targetLang);
+    _setTargetLang(temp);
     setText('');
     setShowInput(true);
     setLastTranslatedRange(null);
@@ -174,11 +174,7 @@ export default function Home() {
     saveInputText(newText);
   };
 
-  const handleSwapLanguages = () => {
-    const temp = sourceLang;
-    _setSourceLang(targetLang);
-    _setTargetLang(temp);
-  };
+  
   
   const handleContentSelect = (content: string) => {
     setText(content);
