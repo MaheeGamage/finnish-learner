@@ -5,7 +5,8 @@
      the goal/task files and is regenerable; never trust it over those files. -->
 
 ## Project
-<!-- 1-2 authored sentences: what this effort is about. The only hand-written part. -->
+An application that helps you learn a language by reading text — surfacing inline
+translation and linguistic context as you read.
 
 ## Goals
 <!-- Each active or drafting goal as a heading; achieved/superseded goals are
@@ -22,6 +23,10 @@
      ### [[002-future-goal]] — drafting
 -->
 
+### [[001-plan-version-2]] — draft
+<!-- No tasks yet. -->
+
+
 ## Output locations
 <!-- Authored (not derived): a high-level map of where each KIND of output is
      saved for this project — not a list of individual files. The agent reads this
@@ -37,3 +42,7 @@
 
      Per-file links to what was actually produced live in each task's `Outputs`
      section, not here. -->
+
+- Code → project root
+- Docs → /docs
+- Decisions → [[.project/decisions]]

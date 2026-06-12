@@ -8,6 +8,19 @@ any chat history — so work can pause and resume across sessions, tools, and AI
 its open work. (Each artifact explains *itself* in the comments inside its file/template;
 this glue only covers how the pieces fit together.)
 
+## Pace — small steps, human-approved (AI: read this first)
+
+The human directs; you assist. Move slowly and stay reviewable — do **not** race ahead and
+scaffold the whole project at once.
+
+- **One file at a time.** Create or change a single file, then stop. Never batch several
+  goals / tasks / constraints / decisions in one turn.
+- **Check before and after.** Say what you're about to write and why, get the human's okay,
+  write just that one thing, then pause for review before the next file.
+- **Default to draft.** A goal stays `draft` until the human promotes it to `active`; a task
+  ends at `in-review` for the human to approve, not `done`.
+- **Ask on forks.** When a real choice appears, surface it — don't decide silently.
+
 ## Layout
 
 ```
@@ -39,6 +52,9 @@ this glue only covers how the pieces fit together.)
   `decisions/` record. Everything reversible or trivial stays in a task's `Log`.
 
 ## Workflow — the loop
+
+The loop plays out over many sessions, one small step at a time (see **Pace** above) — it is
+not a checklist to run in one go.
 
 1. **Start** — dump your rough idea, refine it into the first goal (`goals/001-*.md`,
    `draft` → `active`). Put any given constraints in `constraints.md`.
