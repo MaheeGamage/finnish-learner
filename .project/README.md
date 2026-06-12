@@ -79,5 +79,5 @@ Copy the matching template and fill it (its comments guide you, then delete them
 
 ## Principles
 
-Minimal core; generic for any project (domain-specific needs are optional layers);
-file-based (no tool required); human in control (AI assists, the human directs).
+- Minimal core; generic for any project (domain-specific needs are optional layers); file-based (no tool required); human in control (AI assists, the human directs).
+- Create the files with minimum amount of text.

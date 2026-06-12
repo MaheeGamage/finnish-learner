@@ -14,6 +14,9 @@
      - No cloud services — from [[002-self-host]] (a decision)
      - Must work offline — from [[001-knowledge-search]] (the goal)
      - API limit 100 req/min — surfaced in [[survey-existing-tools]] (a task) -->
+- Components must be independently operable — Reader works standalone; Vocab Store + Vocab Test work without the Reader — given
+- Vocabulary + knowledge stored in a user-accessible Google Sheet — from [001-storage-google-sheet](decisions/001-storage-google-sheet.md) (a decision)
+- Testing/knowledge-measurement mechanism must be modular — swappable between implementations (custom quiz first, Anki/other later) — from [002-testing-custom-quiz](decisions/002-testing-custom-quiz.md) (a decision)
 
 ## Lifted / changed
 <!-- Constraints no longer in force: struck through, with what replaced them and the

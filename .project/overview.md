@@ -23,7 +23,9 @@ translation and linguistic context as you read.
      ### [[002-future-goal]] — drafting
 -->
 
-### [[001-plan-version-2]] — draft
+<!-- 001-plan-version-2 — achieved 2026-06-12 (omitted per convention) -->
+
+### [[002-build-v2-mvp]] — draft
 <!-- No tasks yet. -->
 
 
@@ -45,4 +47,4 @@ translation and linguistic context as you read.
 
 - Code → project root
 - Docs → /docs
-- Decisions → [[.project/decisions]]
+- Decisions → [.project/decisions/](.project/decisions/)
