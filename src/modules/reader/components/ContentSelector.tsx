@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ContentItem } from '@/utils/contentLoader';
+import { ContentItem } from '@/modules/content';
 
 interface ContentSelectorProps {
   onContentSelect: (content: string) => void;

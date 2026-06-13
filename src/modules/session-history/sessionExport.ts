@@ -1,4 +1,7 @@
-import type { TranslationEvent, AggregatedTranslation, SessionSummaryExport } from '@/types/session';
+import type { TranslationEvent, AggregatedTranslation, SessionSummaryExport } from './types';
+
+// Number of characters to include in the content snippet for session exports
+export const SESSION_CONTENT_SNIPPET_LENGTH = 200;
 
 export function aggregateTranslations(events: TranslationEvent[]): AggregatedTranslation[] {
   const map = new Map<string, AggregatedTranslation>();

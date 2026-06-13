@@ -1,5 +1,5 @@
-import { WiktApiResponse, WiktApiEntry, WiktApiSense } from '../types/wiktApi';
-import { RichTranslation, Definition, Example, PartOfSpeech } from '../types/richTranslation';
+import { WiktApiResponse, WiktApiEntry, WiktApiSense } from './types';
+import { RichTranslation, Definition, Example, PartOfSpeech } from '../types';
 import { mapPartOfSpeech } from './partOfSpeechMap';
 import { formatGrammaticalTags } from './grammaticalTags';
 

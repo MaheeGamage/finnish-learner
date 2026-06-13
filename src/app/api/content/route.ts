@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllContentMetadata, getContentById } from '@/utils/contentLoader';
+import { getAllContentMetadata, getContentById } from '@/modules/content';
 
 // GET /api/content - Fetch all content metadata (without full content)
 export async function GET(request: Request) {

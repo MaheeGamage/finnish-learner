@@ -18,6 +18,3 @@ export const TRANSLATION_MODES = {
 } as const;
 
 export type TranslationMode = typeof TRANSLATION_MODES[keyof typeof TRANSLATION_MODES];
-
-// Number of characters to include in the content snippet for session exports
-export const SESSION_CONTENT_SNIPPET_LENGTH = 200;

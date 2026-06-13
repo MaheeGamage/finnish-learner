@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: in-review
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -21,10 +21,14 @@ v2-components diagram draws it as a peer service; the code already merged it int
 translation.) No `shared` module for now — nothing is genuinely cross-cutting yet.
 
 - [x] Map each existing file to a module. (see ## Mapping)
-- [ ] Create the module folders, each exposing a public API via `index.ts`.
-- [ ] Define interface contracts at the boundaries (cross-module access goes through them).
-- [ ] Move code and fix imports.
-- [ ] Verify the app builds and behaves as before.
+- [x] Create the module folders, each exposing a public API via `index.ts`.
+- [x] Define interface contracts at the boundaries (each module's `index.ts` barrel is its
+      contract; cross-module access goes only through `@/modules/<name>`).
+- [x] Move code and fix imports. `git mv` used to preserve history; `components/`, `utils/`,
+      `types/`, `config/` are gone. `textStorage.ts` + `constants.ts` split per the mapping.
+- [x] Verify the app builds and behaves as before. Pure move — no behaviour change.
+      `tsc --noEmit` shows only the 4 *pre-existing* `RichTranslation` vs `string` errors
+      (confirmed identical on the committed baseline via `git stash`); ESLint clean.
 
 ## Mapping
 Target tree (`← old path` shows where each file comes from). After the move,
@@ -79,9 +83,8 @@ src/
     └── session-history/                flat — 1 file per role for now
         ├── index.ts                    public API
         ├── SessionSummary.tsx          ← components/SessionSummary.tsx
-        ├── sessionExport.ts            ← utils/sessionExport.ts
+        ├── sessionExport.ts            ← utils/sessionExport.ts + SESSION_CONTENT_SNIPPET_LENGTH
         ├── storage.ts                  ← session parts of utils/textStorage.ts
-        │                                 + SESSION_CONTENT_SNIPPET_LENGTH
         └── types.ts                    ← types/session.ts
 ```
 
@@ -92,3 +95,12 @@ Subfolders follow the "2+ files of a role" rule: `reader` earns `components/` (3
 ## Done when
 Code lives in `src/modules/<component>/` modules, each with a public API and boundary
 interfaces; cross-module access goes only through those; app builds and behaves unchanged.
+
+## Log
+- [ai] Moved all six modules. Each module's `index.ts` is its public contract; `app/` kept
+  thin (page composes `reader` + `session-history`; routes delegate to `content` /
+  `session-history`). Verified type-neutral via `tsc` + `git stash` baseline compare.
+- [ai] Pre-existing bug surfaced, NOT fixed here (out of scope for a pure refactor):
+  `tsc` reports 4 errors in `TranslatableWord.tsx` / `SelectionTranslationPopup.tsx` —
+  `RichTranslation` compared to / passed as `string`. Present on the committed baseline too.
+  `next build` would fail on these before and after. Worth a small dedicated fix task.

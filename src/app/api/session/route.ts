@@ -2,8 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { NextResponse } from 'next/server';
-import { buildExport } from '@/utils/sessionExport';
-import type { TranslationEvent } from '@/types/session';
+import { buildExport, type TranslationEvent } from '@/modules/session-history';
 
 // Path where the latest session export is cached so GET /api/session can serve it.
 const SESSION_CACHE_PATH = path.join(os.tmpdir(), 'finnish-learner-session.json');

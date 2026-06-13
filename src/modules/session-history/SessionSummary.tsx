@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { TranslationEvent } from '@/types/session';
-import { aggregateTranslations } from '@/utils/sessionExport';
+import type { TranslationEvent } from './types';
+import { aggregateTranslations } from './sessionExport';
 
 interface SessionSummaryProps {
   translations: TranslationEvent[];

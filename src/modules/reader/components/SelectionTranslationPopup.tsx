@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SELECTION_CONFIG, TRANSLATION_CONFIG } from '@/config/selectionConfig';
-import { TRANSLATION_MODES, TranslationMode } from '@/config/constants';
-import { fetchRichTranslation } from '@/utils/richTranslationService';
-import { RichTranslation } from '@/types/richTranslation';
-import { recordLookup } from '@/utils/vocabStorage';
+import { SELECTION_CONFIG, TRANSLATION_CONFIG } from '../config/selectionConfig';
+import { TRANSLATION_MODES, TranslationMode } from '../config/readerConfig';
+import { fetchRichTranslation, RichTranslation } from '@/modules/translation';
+import { recordLookup } from '@/modules/vocab-store';
 
 interface SelectionTranslationPopupProps {
   sourceLang: 'en' | 'fi';

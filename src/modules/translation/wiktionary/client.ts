@@ -3,7 +3,7 @@
  * Handles timeout, HTTP errors, and network failures gracefully
  */
 
-import type { WiktApiResponse, WiktApiEntry, WiktApiSense } from '../types/wiktApi';
+import type { WiktApiResponse, WiktApiEntry, WiktApiSense } from './types';
 
 const WIKTAPI_BASE_URL = 'https://api.wiktapi.dev/v1/en/word';
 const WIKTAPI_TIMEOUT_MS = 5000;

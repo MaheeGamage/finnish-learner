@@ -1,4 +1,4 @@
-import { PartOfSpeech } from '../types/richTranslation';
+import { PartOfSpeech } from '../types';
 
 /**
  * Maps WiktApi POS codes to human-readable labels

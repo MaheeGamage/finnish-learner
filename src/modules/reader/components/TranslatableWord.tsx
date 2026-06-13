@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { fetchRichTranslation } from '@/utils/richTranslationService';
-import { RichTranslation } from '@/types/richTranslation';
-import { hasTextSelection } from '@/utils/textUtils';
-import { recordLookup } from '@/utils/vocabStorage';
-import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '@/config/constants';
-import { TRANSLATION_CONFIG } from '@/config/selectionConfig';
+import { fetchRichTranslation, RichTranslation } from '@/modules/translation';
+import { hasTextSelection } from '../textUtils';
+import { recordLookup } from '@/modules/vocab-store';
+import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '../config/readerConfig';
+import { TRANSLATION_CONFIG } from '../config/selectionConfig';
 
 interface TranslatableWordProps {
     word: string;

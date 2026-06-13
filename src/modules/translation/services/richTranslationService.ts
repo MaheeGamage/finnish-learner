@@ -3,10 +3,10 @@
  * Orchestrates fetching rich linguistic data from WiktApi with fallback to existing translator
  */
 
-import { RichTranslation } from '../types/richTranslation';
-import { WiktApiResponse } from '../types/wiktApi';
-import { fetchWordEntry } from './wiktApiClient';
-import { parseResponse, extractLemma } from './wiktApiParser';
+import { RichTranslation } from '../types';
+import { WiktApiResponse } from '../wiktionary/types';
+import { fetchWordEntry } from '../wiktionary/client';
+import { parseResponse, extractLemma } from '../wiktionary/parser';
 import { translateWord } from './translator';
 
 /**
