@@ -127,7 +127,11 @@ export default function SessionSummary({
                   className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
                 >
                   <td className="px-3 py-2 font-medium text-gray-800">{item.word}</td>
-                  <td className="px-3 py-2 text-indigo-600">{item.translation}</td>
+                  <td className="px-3 py-2 text-indigo-600">
+                    {typeof item.translation === 'string' 
+                      ? item.translation 
+                      : (item.translation as any)?.fallbackTranslation || 'Translation error'}
+                  </td>
                   <td className="px-3 py-2 text-center">
                     <span className={`inline-block min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full text-xs font-semibold
                       ${item.count > 2 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>
