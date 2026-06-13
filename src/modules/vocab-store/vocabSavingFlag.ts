@@ -1,6 +1,7 @@
 const FALSE_ENV_VALUES = new Set(['0', 'false', 'no', 'off']);
 
 const isEnabled = (value: string | undefined): boolean => {
+  // Default-on behavior: missing env values keep vocabulary saving enabled.
   if (!value) return true;
   return !FALSE_ENV_VALUES.has(value.trim().toLowerCase());
 };
