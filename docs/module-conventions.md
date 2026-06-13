@@ -32,6 +32,8 @@ freely. Cross-module access goes through these barrels only — that *is* the bo
 | `components/`  | React UI (`.tsx`) |
 | `services/`    | logic & orchestration ("what we do") |
 | `storage.ts`   | persistence ("where it lives") — its own layer, see §4 |
+| `ports/`       | port interfaces — one file per port, see §5 |
+| `adapters/`    | adapter implementations — one file per adapter, see §5 |
 | `config.ts`    | module constants / config |
 | `types.ts`     | the module's types |
 | `<sub>/`       | a genuine internal sub-module (e.g. `translation/wiktionary/`) |
@@ -58,20 +60,35 @@ Every external dependency is reached through a module-internal interface ("port"
 concrete implementation ("adapter") behind it. The orchestrator depends on the interface,
 not on the vendor. This is what makes a provider switchable.
 
+This is the **Ports and Adapters** pattern (also called Hexagonal Architecture). If you know
+Java: it's the same as depending on an `interface` and injecting the concrete `class` — the
+port is the interface, the adapter is the implementing class. TypeScript uses structural
+typing so no `implements` keyword is needed, but the intent is identical.
+
+```
+service → [Port interface] ← Adapter → real API / library
+```
+
 Keep it lightweight: **one interface + one adapter each** — no provider registry / plugin
 system until something actually needs it.
 
-Current and planned ports:
+### Implemented ports
 
-| Port | What it does | Adapter today | Could become |
-|---|---|---|---|
-| `Translator` | `translate(word, from, to)` → string | MyMemory | Google, DeepL |
-| `Dictionary` | `lookup(word)` → lemma, part of speech, definitions | Wiktionary | other lexical API |
-| `ContentSource` | provide reading content | local files (`fs` + gray-matter) | remote, AI-generated |
-| `VocabRepository` | persist vocab + knowledge | localStorage | Google Sheet |
+| Port | Module | File | Adapter today | Could become |
+|---|---|---|---|---|
+| `Translator` | `translation` | [`ports/Translator.ts`](../src/modules/translation/ports/Translator.ts) | [`GoogleTranslateAdapter`](../src/modules/translation/adapters/GoogleTranslateAdapter.ts) | DeepL, Azure |
+| `Dictionary` | `translation` | [`ports/Dictionary.ts`](../src/modules/translation/ports/Dictionary.ts) | [`WiktionaryDictionary`](../src/modules/translation/adapters/WiktionaryDictionary.ts) | other lexical API |
+| `ContentSource` | `content` | [`ports/ContentSource.ts`](../src/modules/content/ports/ContentSource.ts) | [`LocalFilesContentSource`](../src/modules/content/adapters/LocalFilesContentSource.ts) | remote, AI-generated |
+| `VocabRepository` | `vocab-store` | [`ports/VocabRepository.ts`](../src/modules/vocab-store/ports/VocabRepository.ts) | [`LocalStorageVocabRepository`](../src/modules/vocab-store/adapters/LocalStorageVocabRepository.ts) | Google Sheet |
 
 **Translator vs Dictionary are different ports, not one.** A translator says what a word
 *means* in another language (Finnish → English). A dictionary (Wiktionary) describes the
 word in its own language — its lemma (base form, `juoksen` → `juosta`), part of speech,
 definitions, grammar. `RichTranslation` is built from both. They answer different questions,
 so they get different interfaces.
+
+### How to swap an adapter
+
+1. Create a new file in `adapters/` implementing the port interface.
+2. In the service that uses it, replace the imported default adapter instance with your new one.
+3. No changes needed anywhere else — consumers only see the port type.

@@ -27,7 +27,7 @@ translation and linguistic context as you read.
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 <!-- - [introduce-dev-container](tasks/task-004_introduce-dev-container.md) — done 2026-06-13 -->
-- [abstract-third-party-providers](tasks/task-003_abstract-third-party-providers.md) — to-do
+<!-- - [abstract-third-party-providers](tasks/task-003_abstract-third-party-providers.md) — done 2026-06-13 -->
 
 
 ## Output locations

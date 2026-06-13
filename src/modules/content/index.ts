@@ -5,3 +5,4 @@
 
 export { getAllContentMetadata, getContentById, getContentFiles } from './contentLoader';
 export type { ContentItem } from './contentLoader';
+export type { ContentSource } from './ports/ContentSource';

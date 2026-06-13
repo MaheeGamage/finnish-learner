@@ -6,3 +6,5 @@
 
 export { fetchRichTranslation } from './services/richTranslationService';
 export type { RichTranslation, Definition, Example, PartOfSpeech } from './types';
+export type { Translator } from './ports/Translator';
+export type { Dictionary, DictionaryEntry } from './ports/Dictionary';

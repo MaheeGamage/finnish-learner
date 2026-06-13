@@ -5,3 +5,4 @@
 
 export { recordLookup, getLookups, clearLookups } from './vocabStorage';
 export type { VocabLookup } from './vocabStorage';
+export type { VocabRepository } from './ports/VocabRepository';

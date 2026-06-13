@@ -130,7 +130,7 @@ export default function SessionSummary({
                   <td className="px-3 py-2 text-indigo-600">
                     {typeof item.translation === 'string' 
                       ? item.translation 
-                      : (item.translation as any)?.fallbackTranslation || 'Translation error'}
+                      : (item.translation as { fallbackTranslation?: string | null })?.fallbackTranslation || 'Translation error'}
                   </td>
                   <td className="px-3 py-2 text-center">
                     <span className={`inline-block min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full text-xs font-semibold
