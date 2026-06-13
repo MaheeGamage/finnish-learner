@@ -143,8 +143,9 @@ export default function TranslatableWord({
                 recordLookup(text, displayText, sourceLang, targetLang);
             }
             onTranslated(tokenIndex);
-            if (result !== TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR) {
-                onWordTranslated?.(text, result, 'hover');
+            const translationText = result.fallbackTranslation || result.definitions.map(d => d.text).join(', ') || '';
+            if (translationText && translationText !== TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR) {
+                onWordTranslated?.(text, translationText, 'hover');
             }
             // Calculate position while tooltip is invisible
             requestAnimationFrame(() => {

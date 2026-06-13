@@ -73,8 +73,14 @@ export default function SelectionTranslationPopup({
 
       // Additional safety: Check if the selection is within our main content area
       // Exclude selections that might be from the popup itself or hover tooltips
+      const rangeCount = selection?.rangeCount || 0;
+      if (rangeCount === 0) {
+        setShowSubtitlePopup(false);
+        return;
+      }
       const range = selection?.getRangeAt(0);
       const container = range?.commonAncestorContainer;
+      
       if (!range || !isWithinReadingContent(container)) {
         setShowSubtitlePopup(false);
         setSelectedText('');
@@ -126,8 +132,9 @@ export default function SelectionTranslationPopup({
             setIsTranslationLoading(false);
             if (result && tokenRange) {
               onTranslated(tokenRange);
-              if (result !== TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR) {
-                onSelectionTranslated?.(selectedText, result, 'selection');
+              const translationText = result.fallbackTranslation || result.definitions.map(d => d.text).join(', ') || '';
+              if (translationText && translationText !== TRANSLATION_CONFIG.ERRORS.TRANSLATION_ERROR) {
+                onSelectionTranslated?.(selectedText, translationText, 'selection');
               }
             }
             // Record lookup for vocabulary tracking
