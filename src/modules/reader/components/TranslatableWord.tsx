@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchRichTranslation, RichTranslation } from '@/modules/translation';
 import { hasTextSelection } from '../textUtils';
-import { recordLookup } from '@/modules/vocab-store';
+import { saveVocab } from '@/modules/vocab-store';
 import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '../config/readerConfig';
 import { TRANSLATION_CONFIG } from '../config/selectionConfig';
 
@@ -137,10 +137,10 @@ export default function TranslatableWord({
             if (!result) return;
             
             setTranslation(result);
-            // Record lookup with the best available translation
+            // Save to vocabulary (fire-and-forget — does not block reading)
             const displayText = result.definitions[0]?.text || result.fallbackTranslation;
             if (displayText) {
-                recordLookup(text, displayText, sourceLang, targetLang);
+                saveVocab(text, displayText, sourceLang, targetLang);
             }
             onTranslated(tokenIndex);
             const translationText = result.fallbackTranslation || result.definitions.map(d => d.text).join(', ') || '';

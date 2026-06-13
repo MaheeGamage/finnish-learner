@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthButton from "@/components/AuthButton";
+import { VocabSheetField } from "@/modules/vocab-store";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <nav className="fixed top-0 right-0 p-3 z-50">
+        <nav className="fixed top-0 right-0 p-3 z-50 flex items-center gap-3">
+          <VocabSheetField />
           <AuthButton />
         </nav>
         {children}

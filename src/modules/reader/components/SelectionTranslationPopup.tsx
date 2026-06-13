@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { SELECTION_CONFIG, TRANSLATION_CONFIG } from '../config/selectionConfig';
 import { TRANSLATION_MODES, TranslationMode } from '../config/readerConfig';
 import { fetchRichTranslation, RichTranslation } from '@/modules/translation';
-import { recordLookup } from '@/modules/vocab-store';
+import { saveVocab } from '@/modules/vocab-store';
 
 interface SelectionTranslationPopupProps {
   sourceLang: 'en' | 'fi';
@@ -137,11 +137,11 @@ export default function SelectionTranslationPopup({
                 onSelectionTranslated?.(selectedText, translationText, 'selection');
               }
             }
-            // Record lookup for vocabulary tracking
-            const translationText = result.fallbackTranslation || 
+            // Save to vocabulary (fire-and-forget — does not block reading)
+            const vocabTranslation = result.fallbackTranslation ||
               result.definitions.map(d => d.text).join(', ') || '';
-            if (translationText && translationText !== 'Translation error') {
-              recordLookup(selectedText, translationText, sourceLang, targetLang);
+            if (vocabTranslation && vocabTranslation !== 'Translation error') {
+              saveVocab(selectedText, vocabTranslation, sourceLang, targetLang);
             }
           } catch (error) {
             console.error('Error translating selection:', error);
