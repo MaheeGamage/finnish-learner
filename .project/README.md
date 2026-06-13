@@ -32,7 +32,8 @@ scaffold the whole project at once.
 ├── tasks/           One file per task (slug.md): the work that moves a goal forward.
 ├── decisions/       One file per significant decision (001-slug.md): an immutable record
 │                    of a hard-to-reverse choice between real alternatives.
-└── templates/       Blank templates to copy when creating a new goal / task / decision.
+├── templates/       Blank templates to copy when creating a new goal / task / decision.
+└── comments.md      Record any comments that can be consider when planning for future steps
 ```
 
 `goals/` + `tasks/` are the source of truth; `overview.md` is a mostly-derived view of them.
