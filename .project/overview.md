@@ -27,8 +27,10 @@ translation and linguistic context as you read.
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 <!-- - [google-oauth-flow](tasks/task-005_google-oauth-flow.md) — done 2026-06-13 -->
-- [google-sheets-adapter](tasks/task-006_google-sheets-adapter.md) — in-review
+- [google-sheets-adapter](tasks/task-006_google-sheets-adapter.md) — in-progress
 - [oauth-token-refresh](tasks/task-007_oauth-token-refresh.md) — to-do
+- [vocab-sheet-connect-ux](tasks/task-008_vocab-sheet-connect-ux.md) — to-do
+- [save-failure-notifications](tasks/task-009_save-failure-notifications.md) — to-do
 
 
 ## Output locations
@@ -54,6 +56,12 @@ translation and linguistic context as you read.
 
 ## Notes
 
-<!-- decision resolved 2026-06-13 → see decisions/003-vocab-sheet-design.md -->
-
 - Remove characters like . or ! or anything else that not a letter before sending a word for translation
+
+<!-- ⏸ Development parked 2026-06-13. Resume at task-006 (in-progress; only the env save-toggle
+     is left). Full handoff — run/test
+     instructions, the token-expiry gotcha, and the queued follow-ups (007/008/009) — is in the
+     "PARKED — resume here" note at the bottom of task-006's Log. -->
+- ⏸ Parked 2026-06-13 — resume at [task-006](tasks/task-006_google-sheets-adapter.md) (see its "PARKED — resume here" note). Work is uncommitted on `feature/implement-v2`.
+
+- Human need to review task 7,8,9 before starting - IIMPORTANT
