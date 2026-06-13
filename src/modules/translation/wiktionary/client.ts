@@ -67,7 +67,7 @@ export async function fetchWordEntry(
 
     if (!response.ok) {
       // HTTP error (4xx, 5xx) - log and return null
-      console.error('[WiktApi] HTTP error:', {
+      console.warn('[WiktApi] HTTP error (falling back to generic translation):', {
         status: response.status,
         statusText: response.statusText,
         word,
@@ -82,9 +82,9 @@ export async function fetchWordEntry(
     // Handle timeout, network errors, CORS issues
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        console.error('[WiktApi] Request timeout:', { word, lang, timeout: mergedConfig.timeout });
+        console.warn('[WiktApi] Request timeout:', { word, lang, timeout: mergedConfig.timeout });
       } else {
-        console.error('[WiktApi] Network error:', {
+        console.warn('[WiktApi] Network error:', {
           word,
           lang,
           message: error.message,

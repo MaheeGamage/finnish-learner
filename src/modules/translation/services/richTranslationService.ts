@@ -59,8 +59,8 @@ export async function fetchRichTranslation(
     // WiktApi returned no data - use fallback
     return await createFallbackTranslation(word, lang);
   } catch (error) {
-    // Log error and fall back
-    console.error('[RichTranslation] Error fetching from WiktApi:', {
+    // Log warning and fall back
+    console.warn('[RichTranslation] Error fetching from WiktApi (using fallback):', {
       word,
       lang,
       error: error instanceof Error ? error.message : 'Unknown error',
