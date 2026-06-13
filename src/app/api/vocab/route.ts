@@ -3,6 +3,13 @@ import { auth } from '@/lib/auth';
 import { createGoogleSheetsVocabRepository } from '@/modules/vocab-store/adapters/GoogleSheetsVocabRepository';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
+const FALSE_ENV_VALUES = new Set(['0', 'false', 'no', 'off']);
+
+const isVocabSavingEnabled = (): boolean => {
+  const envValue = process.env.VOCAB_SAVING_ENABLED ?? process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
+  if (!envValue) return true;
+  return !FALSE_ENV_VALUES.has(envValue.trim().toLowerCase());
+};
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -18,6 +25,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+  if (!isVocabSavingEnabled()) {
+    return NextResponse.json({ ok: true, skipped: 'disabled' });
+  }
 
   const sheetId = request.headers.get(SHEET_ID_HEADER);
   if (!sheetId) return NextResponse.json({ error: 'No vocabulary sheet configured' }, { status: 400 });

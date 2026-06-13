@@ -26,10 +26,16 @@ A personal Finnish learning app — read Finnish text with interactive word-by-w
 
 ```bash
 npm install
+cp .env.local.example .env.local
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+### Environment
+
+- `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` (default: `true`) — set `false`/`0`/`no`/`off` to read without writing new vocabulary rows.
+- `VOCAB_SAVING_ENABLED` (optional server override) — same values as above.
 
 ### Build for Production
 
