@@ -1,5 +1,5 @@
 ---
-status: in-review
+status: done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -101,6 +101,8 @@ interfaces; cross-module access goes only through those; app builds and behaves 
   thin (page composes `reader` + `session-history`; routes delegate to `content` /
   `session-history`). Verified type-neutral via `tsc` + `git stash` baseline compare.
 - [ai] Pre-existing bug surfaced, NOT fixed here (out of scope for a pure refactor):
-  `tsc` reports 4 errors in `TranslatableWord.tsx` / `SelectionTranslationPopup.tsx` —
-  `RichTranslation` compared to / passed as `string`. Present on the committed baseline too.
-  `next build` would fail on these before and after. Worth a small dedicated fix task.
+  `tsc` reported 4 errors in `TranslatableWord.tsx` / `SelectionTranslationPopup.tsx` —
+  `RichTranslation` compared to / passed as `string`.
+- [human] Tested the app end-to-end — works as expected. Restructure accepted; task done.
+  Applied some fixes since; `tsc --noEmit` now passes clean, so the `RichTranslation`/`string`
+  bug is resolved.

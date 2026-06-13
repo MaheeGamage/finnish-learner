@@ -26,7 +26,7 @@ translation and linguistic context as you read.
 <!-- 001-plan-version-2 — achieved 2026-06-12 (omitted per convention) -->
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
-- [restructure-by-component](tasks/task-002_restructure-by-component.md) — in-review
+<!-- task-002 restructure-by-component — done 2026-06-13 (omitted per convention) -->
 - [abstract-third-party-providers](tasks/task-003_abstract-third-party-providers.md) — to-do
 
 
