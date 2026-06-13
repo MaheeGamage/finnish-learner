@@ -1,13 +1,7 @@
 import { getVocabSheetId } from './sheetSettings';
+import { isClientVocabSavingEnabled } from './vocabSavingFlag';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
-const FALSE_ENV_VALUES = new Set(['0', 'false', 'no', 'off']);
-
-const isVocabSavingEnabled = (): boolean => {
-  const envValue = process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
-  if (!envValue) return true;
-  return !FALSE_ENV_VALUES.has(envValue.trim().toLowerCase());
-};
 
 export async function saveVocab(
   word: string,
@@ -15,7 +9,7 @@ export async function saveVocab(
   sourceLang: string,
   targetLang: string,
 ): Promise<void> {
-  if (!isVocabSavingEnabled()) return;
+  if (!isClientVocabSavingEnabled()) return;
 
   const sheetId = getVocabSheetId();
   // No sheet configured yet — nothing to save to. Reading is unaffected.

@@ -35,7 +35,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Environment
 
 - `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` (default: `true`) — set `false`/`0`/`no`/`off` to read without writing new vocabulary rows.
-- `VOCAB_SAVING_ENABLED` (optional server override) — same values as above.
+- `VOCAB_SAVING_ENABLED` (optional server override) — same values as above; useful if you want to force-disable saves on the server without relying on a client build-time env value.
 
 ### Build for Production
 
