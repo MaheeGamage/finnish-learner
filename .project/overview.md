@@ -28,6 +28,7 @@ translation and linguistic context as you read.
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 <!-- - [introduce-dev-container](tasks/task-004_introduce-dev-container.md) — done 2026-06-13 -->
 <!-- - [abstract-third-party-providers](tasks/task-003_abstract-third-party-providers.md) — done 2026-06-13 -->
+- [google-oauth-flow](tasks/task-005_google-oauth-flow.md) — to-do
 
 
 ## Output locations
@@ -49,3 +50,13 @@ translation and linguistic context as you read.
 - Code → project root
 - Docs → /docs
 - Decisions → [.project/decisions/](.project/decisions/)
+
+
+## Notes
+
+- **Open decision before building the Sheets adapter**: unified port vs. two separate ports
+  (`VocabRepository` + `KnowledgeRepository`), and what columns go in the Google Sheet.
+  Current `VocabRepository` only covers word/translation — no SRS fields yet. Resolve before
+  writing any adapter code.
+
+- Remove characters like . or ! or anything else that not a letter before sending a word for translation
