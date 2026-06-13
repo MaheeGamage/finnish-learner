@@ -261,11 +261,7 @@ export default function SelectionTranslationPopup({
               {sourceLang.toUpperCase()} → {targetLang.toUpperCase()}
             </div>
             
-            {/* Selected word */}
-            <div className="text-sm sm:text-base font-medium text-gray-200 mb-2">
-              &ldquo;{selectedText}&rdquo;
-            </div>
-            
+
             {/* Translation content */}
             {isTranslationLoading ? (
               <div className="flex items-center gap-2 py-2">
