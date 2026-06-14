@@ -12,7 +12,9 @@ export {
   clearVocabSheetId,
   parseSpreadsheetId,
 } from './sheetSettings';
-export { default as VocabSheetField } from './components/VocabSheetField';
+export { requestSheetValidation } from './validateSheet';
+export type { SheetValidationResult } from './validateSheet';
+export { default as VocabSheetPill } from './components/VocabSheetPill';
 export { recordLookup, getLookups, clearLookups } from './vocabStorage';
 export type { VocabLookup } from './vocabStorage';
 export type { VocabRepository } from './ports/VocabRepository';

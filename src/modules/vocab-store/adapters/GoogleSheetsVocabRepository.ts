@@ -55,6 +55,40 @@ async function getOrProvisionHeaders(
   return { sheetName, headers: headerMap };
 }
 
+export type SheetValidation =
+  | { ok: true }
+  | { ok: false; reason: 'missing-headers'; missing: string[] }
+  | { ok: false; reason: 'unreachable'; message: string };
+
+/**
+ * Read-only check that a sheet is usable as a vocabulary store: reachable with the
+ * user's token and has the required `Finnish` / `Translation` headers in row 1.
+ * Unlike `getOrProvisionHeaders`, this never mutates the sheet (no header provisioning) —
+ * provisioning of the app-owned headers stays lazy on first save.
+ */
+export async function validateVocabSheet(spreadsheetId: string): Promise<SheetValidation> {
+  try {
+    const sheets = await getSheetsClient();
+    const meta = await sheets.spreadsheets.get({ spreadsheetId });
+    const sheet =
+      meta.data.sheets?.find((s) => s.properties?.title === 'Vocabulary') ??
+      meta.data.sheets?.[0];
+    const sheetName = sheet?.properties?.title;
+    if (!sheetName) return { ok: false, reason: 'unreachable', message: 'Spreadsheet has no sheets' };
+
+    const headerRes = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${sheetName}'!1:1`,
+    });
+    const existing: string[] = headerRes.data.values?.[0] ?? [];
+    const missing = REQUIRED_HEADERS.filter((h) => !existing.includes(h));
+    if (missing.length > 0) return { ok: false, reason: 'missing-headers', missing };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: 'unreachable', message: String(error) };
+  }
+}
+
 // Words are matched case-insensitively and trimmed so the same word isn't saved twice.
 function normalizeWord(word: string): string {
   return word.trim().toLowerCase();
