@@ -38,7 +38,7 @@ A word saved while reading shows up as a row in the user's Google Sheet.
 - [sheetSettings.ts](../../src/modules/vocab-store/sheetSettings.ts) — per-user sheet id storage + URL→ID parsing
 - [saveVocab.ts](../../src/modules/vocab-store/saveVocab.ts) — client → `/api/vocab`, sends sheet id header
 - [api/vocab/route.ts](../../src/app/api/vocab/route.ts) — auth-gated GET/POST
-- [VocabSheetField.tsx](../../src/modules/vocab-store/components/VocabSheetField.tsx) — nav input for the sheet
+- `VocabSheetField.tsx` — nav input for the sheet (superseded in [[task-008_vocab-sheet-connect-ux]] by the pill + connect modal)
 - Reader wiring: [TranslatableWord.tsx](../../src/modules/reader/components/TranslatableWord.tsx), [SelectionTranslationPopup.tsx](../../src/modules/reader/components/SelectionTranslationPopup.tsx)
 
 ## Log

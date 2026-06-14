@@ -99,8 +99,10 @@ The two saving flags let you read without writing to the sheet — see
 2. In **row 1**, add the headers **`Finnish`** and **`Translation`** (a single tab).
 3. The app adds the `Status` and `Last Tested` headers itself if they're missing — you
    don't need to. See [decision 003](../.project/decisions/003-vocab-sheet-design.md).
-4. You'll paste the Sheet's URL or ID into the **"Vocab sheet"** field in the app's top
-   nav after signing in (stored in your browser, sent as the `x-vocab-sheet-id` header).
+4. After signing in, click the **sheet-status pill** in the top bar (shows **"No sheet"**)
+   to open the **Connect** modal, paste the Sheet's URL or ID, and click **Connect sheet**.
+   The app validates it (reachable + has the `Finnish`/`Translation` headers) before storing
+   it in your browser (sent as the `x-vocab-sheet-id` header).
 
 ---
 
@@ -111,8 +113,8 @@ npm run dev
 ```
 
 Open **`AUTH_URL`** in the browser (e.g. http://localhost:3000), sign in with a Google
-test user, paste your Sheet into the "Vocab sheet" field, then save a word while reading —
-a row should appear in the sheet.
+test user, connect your Sheet via the top-bar pill (see step 7), then save a word while
+reading — a row should appear in the sheet.
 
 ### Quick auth check
 

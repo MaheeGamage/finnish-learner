@@ -44,9 +44,11 @@ authenticated Sheets API call on their behalf. No Sheets adapter yet — that's 
   server helper: reads session via `auth()`, returns an authenticated `sheets_v4.Sheets`
 - [src/app/api/sheets/verify/route.ts](../../src/app/api/sheets/verify/route.ts) — creates a
   test spreadsheet to confirm auth + Sheets API work end-to-end (safe to delete the result)
-- [src/components/AuthButton.tsx](../../src/components/AuthButton.tsx) — Server Component
-  sign-in / sign-out button; uses Server Actions, no `SessionProvider` required
+- `src/components/AuthButton.tsx` — Server Component sign-in / sign-out button; uses Server
+  Actions, no `SessionProvider` required (superseded in [[task-008_vocab-sheet-connect-ux]] by
+  `TopBar` + `UserMenu`)
 - [src/app/layout.tsx](../../src/app/layout.tsx) — `AuthButton` added to fixed top-right nav
+  (later replaced by the sticky `TopBar` in task-008)
 - [.env.local.example](../../.env.local.example) — documents `AUTH_GOOGLE_ID`,
   `AUTH_GOOGLE_SECRET`, `AUTH_SECRET` with setup instructions
 

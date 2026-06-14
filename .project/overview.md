@@ -27,7 +27,8 @@ translation and linguistic context as you read.
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 <!-- - [google-sheets-adapter](tasks/task-006_google-sheets-adapter.md) — done 2026-06-14 -->
-- [oauth-token-refresh](tasks/task-007_oauth-token-refresh.md) — to-do
+- [vocab-knowledge-quiz](tasks/task-010_vocab-knowledge-quiz.md) — to-do (design-first)
+- [oauth-token-refresh](tasks/task-007_oauth-token-refresh.md) — to-do (parked aside)
 <!-- - [vocab-sheet-connect-ux](tasks/task-008_vocab-sheet-connect-ux.md) — done -->
 
 
@@ -56,3 +57,5 @@ translation and linguistic context as you read.
 
 - Remove characters like . or ! or anything else that not a letter before sending a word for translation
 - Need to check whether we can reduce the google oauth scope to single seet rather than having full `spreadsheets` scope.
+- UI need to be improved
+- There is TODO in here - src/app/api/sheets/verify/route.ts
