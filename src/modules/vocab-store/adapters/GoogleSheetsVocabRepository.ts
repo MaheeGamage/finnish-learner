@@ -3,18 +3,15 @@ import type { sheets_v4 } from 'googleapis';
 import type { VocabRepository } from '../ports/VocabRepository';
 import type { VocabLookup } from '../vocabStorage';
 
-export const VOCAB_STATUS = {
-  NEW: 'New',
-  LEARNING: 'Learning',
-  KNOWN: 'Known',
-} as const;
-
 const REQUIRED_HEADERS = ['Finnish', 'Translation'] as const;
-const APP_HEADERS = ['Status', 'Last Tested'] as const;
+// App-owned columns the app may create/write. Per decision 004 `Status` is NOT app-owned —
+// it's a user-derived sheet formula; the app owns scheduling state (`Last Tested`,
+// `Review Interval`) only.
+const APP_HEADERS = ['Last Tested', 'Review Interval'] as const;
 export type HeaderMap = Record<string, number>;
 
-// Resolves the app-owned column layout for the sheet (by header name, per decision 003),
-// provisioning the Status / Last Tested columns if absent. Shared with the vocab-test
+// Resolves the app-owned column layout for the sheet (by header name, per decisions 003/004),
+// provisioning the Last Tested / Review Interval columns if absent. Shared with the vocab-test
 // knowledge layer so the sheet schema lives in one place.
 export async function getOrProvisionHeaders(
   sheets: sheets_v4.Sheets,
@@ -98,7 +95,7 @@ function normalizeWord(word: string): string {
 }
 
 function buildRow(headers: HeaderMap, values: Record<string, string>): string[] {
-  const ownedIndices = ['Finnish', 'Translation', 'Status', 'Last Tested']
+  const ownedIndices = ['Finnish', 'Translation']
     .map((h) => headers[h] ?? -1)
     .filter((i) => i >= 0);
   const maxCol = Math.max(...ownedIndices);
@@ -123,7 +120,7 @@ export function createGoogleSheetsVocabRepository(spreadsheetId: string): VocabR
       const { sheetName, headers } = await getOrProvisionHeaders(sheets, spreadsheetId);
 
       // De-duplicate: if the word is already saved, do nothing. (Updating an existing
-      // word's knowledge/status belongs to the quiz flow, not to saving while reading.)
+      // word's knowledge belongs to the quiz flow, not to saving while reading.)
       const existing = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: `'${sheetName}'!A2:Z`,
@@ -134,10 +131,11 @@ export function createGoogleSheetsVocabRepository(spreadsheetId: string): VocabR
       );
       if (alreadySaved) return true;
 
+      // Only Finnish/Translation — Status (a user formula) and scheduling state are not
+      // written on save; a new word reads as "New" because it has no Last Tested yet.
       const row = buildRow(headers, {
         Finnish: word,
         Translation: translation,
-        Status: VOCAB_STATUS.NEW,
       });
       await sheets.spreadsheets.values.append({
         spreadsheetId,

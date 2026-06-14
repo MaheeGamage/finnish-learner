@@ -5,7 +5,6 @@ import type {
   QuizResultRequest,
   QuizResultResponse,
   QuizSessionResponse,
-  Status,
 } from './types';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
@@ -33,13 +32,13 @@ export async function fetchQuizSession(): Promise<QuizSessionResult> {
 // Client → POST /api/quiz/result. Records one graded card.
 export async function submitQuizResult(
   rowNumber: number,
-  status: Status | null,
   lastTested: string | null,
+  intervalSeconds: number | null,
   grade: Grade,
 ): Promise<QuizResultResponse> {
   const sheetId = getVocabSheetId();
   if (!sheetId) return { ok: false };
-  const payload: QuizResultRequest = { rowNumber, status, lastTested, grade };
+  const payload: QuizResultRequest = { rowNumber, lastTested, intervalSeconds, grade };
   try {
     const res = await fetch('/api/quiz/result', {
       method: 'POST',

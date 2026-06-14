@@ -1,5 +1,6 @@
 import type { SessionSelector, SelectOptions } from '../ports/SessionSelector';
 import type { Direction, KnowledgeItem, QuizCard, Status } from '../types';
+import { deriveStage, DEFAULT_KNOWN_THRESHOLD_SECONDS } from '../stage';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -7,7 +8,7 @@ export interface PriorityConfig {
   // Fraction of the session (0–1) reserved for brand-new words, so a big New pile doesn't
   // crowd out reviews (and vice versa).
   newRatio: number;
-  // Base weight per box — weaker words surface first.
+  // Base weight per derived stage — weaker words surface first.
   statusWeight: Record<Status, number>;
   // Contribution of overdueness, per day, capped at overdueCapDays.
   overdueWeightPerDay: number;
@@ -15,6 +16,8 @@ export interface PriorityConfig {
   // Random jitter added to each score so near-equal items don't appear in the same order
   // every session.
   jitter: number;
+  // Interval (seconds) at/above which a word counts as Known for weighting (mirrors the sheet).
+  knownThresholdSeconds: number;
 }
 
 export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
@@ -23,6 +26,7 @@ export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
   overdueWeightPerDay: 0.5,
   overdueCapDays: 30,
   jitter: 0.5,
+  knownThresholdSeconds: DEFAULT_KNOWN_THRESHOLD_SECONDS,
 };
 
 const isNew = (item: KnowledgeItem) => item.lastTested === null;
@@ -44,7 +48,7 @@ export function createPrioritySessionSelector(
       const score = (item: KnowledgeItem): number => {
         const overdueDays = (now.getTime() - dueAt(item, now).getTime()) / MS_PER_DAY;
         const cappedOverdue = Math.min(Math.max(overdueDays, 0), config.overdueCapDays);
-        const status: Status = item.status ?? 'New';
+        const status: Status = deriveStage(item, config.knownThresholdSeconds);
         return (
           config.statusWeight[status] +
           cappedOverdue * config.overdueWeightPerDay +

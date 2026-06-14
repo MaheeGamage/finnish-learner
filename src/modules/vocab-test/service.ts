@@ -1,5 +1,5 @@
 import { createGoogleSheetsKnowledgeRepository } from './adapters/GoogleSheetsKnowledgeRepository';
-import { createLeitnerMechanism } from './mechanisms/LeitnerMechanism';
+import { createIntervalMechanism } from './mechanisms/IntervalMechanism';
 import { createPrioritySessionSelector } from './selectors/PrioritySessionSelector';
 import type { KnowledgeRepository } from './ports/KnowledgeRepository';
 import type { SessionSelector } from './ports/SessionSelector';
@@ -18,7 +18,7 @@ export interface QuizService {
 export function getQuizService(spreadsheetId: string): QuizService {
   return {
     repo: createGoogleSheetsKnowledgeRepository(spreadsheetId),
-    mechanism: createLeitnerMechanism(),
+    mechanism: createIntervalMechanism(),
     selector: createPrioritySessionSelector(),
   };
 }

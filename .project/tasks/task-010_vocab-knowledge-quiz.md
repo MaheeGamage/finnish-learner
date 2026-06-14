@@ -36,10 +36,31 @@ Design-first: resolve the open decisions, then build.
       the top bar [human]. Standalone (no Reader needed); deep-linkable.
 
 ### Tuning suggestions (starting points — set/adjust by testing, not fixed in [[004-srs-interval-schema]])
-- First review interval by grade: Again 1 / Hard 2 / Good 3 / Easy 5 days.
-- Later reviews: Again → reset to 1 day; Hard × 1.2; Good × 2; Easy × 3 (min +1 day).
-- "Known" threshold: interval ≥ ~21 days.
+Note: `Review Interval` is stored in **seconds** (multiply day values by 86400). `Last Tested`
+is a full ISO timestamp.
+- First review interval by grade: Again 1 / Hard 2 / Good 3 / Easy 5 days (× 86400 s).
+- Later reviews: Again → reset to the first-review value; Hard × 1.2; Good × 2; Easy × 3 (min +1 s).
+- "Known" threshold: interval ≥ ~21 days (= 21 × 86400 s).
 - Selector: status weakness New 3 / Learning 2 / Known 1; new-item ratio ~40%; session cap ~20.
+
+### Sheet formulas (user-owned, per [[004-srs-interval-schema]] — also for the setup guide)
+`Status` and `Due` are derived in the sheet, not written by the app. `Last Tested` is an ISO
+**timestamp**; `Review Interval` is in **seconds**. Columns assume the user's layout
+(`Finnish`=A, `Status`=C, `Last Tested`=G, `Review Interval`=H) — swap to match. Threshold
+`21*86400` s (= 21 days) = "Known" cutoff, tunable.
+
+`Status` — clear the old values, put in the first data cell (C2):
+```
+=ARRAYFORMULA(IF(A2:A="","",IF(G2:G="","New",IF((H2:H<>"")*(H2:H>=21*86400),"Known","Learning"))))
+```
+
+`Due` (optional, sorting — parses the ISO timestamp, converts seconds→days; UTC):
+```
+=ARRAYFORMULA(IF((G2:G<>"")*(H2:H<>""),DATEVALUE(LEFT(G2:G,10))+TIMEVALUE(MID(G2:G,12,8))+H2:H/86400,""))
+```
+
+Logic: never tested (`Last Tested` empty) → New; tested, interval < threshold → Learning;
+interval ≥ threshold → Known.
 
 ### Build
 - [x] `src/modules/vocab-test/` scaffolding — two swappable ports (**`TestMechanism`**,
@@ -48,10 +69,11 @@ Design-first: resolve the open decisions, then build.
       vocab-store header logic via exported `getOrProvisionHeaders`).
 - [x] API route(s): `GET /api/quiz/session` (built by `SessionSelector`), `POST /api/quiz/result`
       (grade → `TestMechanism` → write). Client helpers in `vocab-test/client.ts`.
-- [ ] **Rework the mechanism to [[004-srs-interval-schema]]** (the interval draft was reverted to
-      decide 004 first): add the `Review Interval` app-owned column; interval-based mechanism with
-      derived `Status`; thread interval through `KnowledgeItem` / result API / client. Currently
-      the module still has the 3-box Leitner mechanism.
+- [x] **Reworked to [[004-srs-interval-schema]]**: app-owned columns now `Last Tested` +
+      `Review Interval` (`Status` dropped from app ownership — vocab-store stops writing it too);
+      `IntervalMechanism` replaces Leitner (grades adjust the interval); `Status` stage derived in
+      code (`stage.ts`) for selection only; interval threaded through `KnowledgeItem` / result API
+      / client. typecheck, lint, production build clean.
 - [x] Quiz UI on `/test`: prompt (mixed fi↔en, with FI→EN / EN→FI tag) → reveal → grade
       (Again/Hard/Good/Easy), progress bar, end-of-session summary, + loading/no-sheet/
       unauthenticated/error/empty states. Keyboard: space reveals, 1–4 grade.
@@ -68,9 +90,10 @@ persisted in the Google Sheet (read → save → quiz → knowledge updated).
   ([TestMechanism](../../src/modules/vocab-test/ports/TestMechanism.ts),
   [SessionSelector](../../src/modules/vocab-test/ports/SessionSelector.ts),
   [KnowledgeRepository](../../src/modules/vocab-test/ports/KnowledgeRepository.ts)),
-  impls ([LeitnerMechanism](../../src/modules/vocab-test/mechanisms/LeitnerMechanism.ts),
+  impls ([IntervalMechanism](../../src/modules/vocab-test/mechanisms/IntervalMechanism.ts),
   [PrioritySessionSelector](../../src/modules/vocab-test/selectors/PrioritySessionSelector.ts),
   [GoogleSheetsKnowledgeRepository](../../src/modules/vocab-test/adapters/GoogleSheetsKnowledgeRepository.ts)),
+  stage derivation ([stage.ts](../../src/modules/vocab-test/stage.ts)),
   default wiring ([service.ts](../../src/modules/vocab-test/service.ts)), client
   ([client.ts](../../src/modules/vocab-test/client.ts)).
 - API: [api/quiz/session/route.ts](../../src/app/api/quiz/session/route.ts) (GET) +
@@ -128,3 +151,16 @@ persisted in the Google Sheet (read → save → quiz → knowledge updated).
 - 2026-06-14: Decision 004 accepted [human]; tuning values (interval days, multipliers, known
   threshold) removed from the decision and parked here as "Tuning suggestions" — to be set by
   testing. Next: rework the mechanism to 004.
+- 2026-06-14: Refined 004 [human]: `Status` is a **user-owned sheet formula**, not app state —
+  the app owns `Last Tested` + `Review Interval` only and writes neither `Status`. Recorded the
+  Status/Due formulas (Sheet formulas section). 003 carries an "Amended by 004" note.
+- 2026-06-14: **Implemented 004** [ai]: vocab-store drops `Status` from app-owned columns + stops
+  writing it on save (provisions `Review Interval`); `IntervalMechanism` (grades adjust interval);
+  `stage.ts` derives the stage in code for selection; knowledge repo reads/writes
+  `Last Tested`+`Review Interval`; interval threaded through types/API/client; setup guide updated
+  with the formulas. typecheck + lint + build clean.
+- 2026-06-14: [human] tuning request — `Last Tested` now a full **ISO timestamp**; `Review Interval`
+  now in **seconds** (field renamed `intervalDays`→`intervalSeconds` throughout; defaults via a
+  `SECONDS_PER_DAY` constant; known threshold `DEFAULT_KNOWN_THRESHOLD_SECONDS`). Sheet formulas
+  updated (Status threshold `21*86400`; Due parses the timestamp + converts s→days). Decision 004
+  reworded (timestamp + seconds). typecheck + lint + build clean. Open: live [human] re-test.

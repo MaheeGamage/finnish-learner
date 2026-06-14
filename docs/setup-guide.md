@@ -97,12 +97,37 @@ The two saving flags let you read without writing to the sheet — see
 
 1. Create (or pick) a Google Sheet in the **same account** you'll sign in with.
 2. In **row 1**, add the headers **`Finnish`** and **`Translation`** (a single tab).
-3. The app adds the `Status` and `Last Tested` headers itself if they're missing — you
-   don't need to. See [decision 003](../.project/decisions/003-vocab-sheet-design.md).
+3. The app adds the **`Last Tested`** and **`Review Interval`** headers itself if missing — you
+   don't need to. See decisions [003](../.project/decisions/003-vocab-sheet-design.md) /
+   [004](../.project/decisions/004-srs-interval-schema.md).
 4. After signing in, click the **sheet-status pill** in the top bar (shows **"No sheet"**)
    to open the **Connect** modal, paste the Sheet's URL or ID, and click **Connect sheet**.
    The app validates it (reachable + has the `Finnish`/`Translation` headers) before storing
    it in your browser (sent as the `x-vocab-sheet-id` header).
+
+### Optional: a derived `Status` (and `Due`) column
+
+`Status` (New / Learning / Known) is **not** written by the app — it's a formula *you* own,
+derived from the scheduling columns ([decision 004](../.project/decisions/004-srs-interval-schema.md)).
+The app writes `Last Tested` as a full **ISO timestamp** and `Review Interval` in **seconds**.
+Add a `Status` column, then in its first data cell (row 2) paste — adjust column letters to your
+sheet (`Finnish` = A, `Last Tested` = G, `Review Interval` = H below):
+
+```
+=ARRAYFORMULA(IF(A2:A="","",IF(G2:G="","New",IF((H2:H<>"")*(H2:H>=21*86400),"Known","Learning"))))
+```
+
+Never tested → **New**; tested → **Learning**; interval ≥ 21 days → **Known**. `21*86400` is the
+threshold in seconds (21 days) — change it to retune.
+
+Optionally, a `Due` column for at-a-glance sorting. Since `Last Tested` is an ISO timestamp
+(text) and the interval is in seconds, parse it and convert seconds → days:
+
+```
+=ARRAYFORMULA(IF((G2:G<>"")*(H2:H<>""),DATEVALUE(LEFT(G2:G,10))+TIMEVALUE(MID(G2:G,12,8))+H2:H/86400,""))
+```
+
+(UTC; format the column as Date time.)
 
 ---
 

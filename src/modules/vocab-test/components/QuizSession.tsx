@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { fetchQuizSession, submitQuizResult } from '../client';
 import type { Grade, QuizCard } from '../types';
@@ -48,7 +48,13 @@ export default function QuizSession() {
     setPhase('active');
   }, []);
 
+  // Load once on mount. The ref guard stops React Strict Mode's double-invoke (dev only) from
+  // firing two /api/quiz/session requests; the "New session" / "Try again" buttons call load()
+  // directly, so refetching still works.
+  const didInit = useRef(false);
   useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
     load();
   }, [load]);
 
@@ -57,7 +63,7 @@ export default function QuizSession() {
       const card = cards[index];
       if (!card) return;
       // Fire-and-forget write; advancing shouldn't wait on the network.
-      void submitQuizResult(card.item.rowNumber, card.item.status, card.item.lastTested, g);
+      void submitQuizResult(card.item.rowNumber, card.item.lastTested, card.item.intervalSeconds, g);
       setReviewed((n) => n + 1);
       const next = index + 1;
       if (next >= cards.length) {
@@ -89,7 +95,16 @@ export default function QuizSession() {
   }, [phase, revealed, grade]);
 
   if (phase === 'loading') {
-    return <Centered>Loading your quiz…</Centered>;
+    return (
+      <Centered>
+        <span
+          className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-indigo-600"
+          role="status"
+          aria-label="Loading"
+        />
+        <p className="mt-3 text-sm text-gray-500">Loading your quiz…</p>
+      </Centered>
+    );
   }
 
   if (phase === 'no-sheet') {

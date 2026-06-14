@@ -1,6 +1,7 @@
 // Shared types for the knowledge-testing (quiz) feature.
 
-// Knowledge status, mirrors VOCAB_STATUS values in the vocab-store sheet (decision 003).
+// User-facing learning stage. Derived in code (and by the sheet's Status formula) from the
+// interval — never stored/written by the app (decision 004).
 export type Status = 'New' | 'Learning' | 'Known';
 
 // Self-graded reveal grades (Anki-style).
@@ -14,14 +15,14 @@ export interface KnowledgeItem {
   rowNumber: number; // 1-based sheet row (header is row 1)
   finnish: string;
   translation: string;
-  status: Status | null; // null = never set in the sheet
-  lastTested: string | null; // ISO date (YYYY-MM-DD) or null
+  lastTested: string | null; // ISO timestamp, or null
+  intervalSeconds: number | null; // Review Interval in seconds; null = never reviewed (decision 004)
 }
 
-// What a graded review resolves to — exactly the app-owned columns we write.
+// What a graded review resolves to — exactly the app-owned columns we write (decision 004).
 export interface ReviewState {
-  status: Status;
-  lastTested: string; // ISO date
+  lastTested: string; // ISO timestamp
+  intervalSeconds: number; // seconds until next review
 }
 
 // A single card to present in a session.
@@ -37,8 +38,8 @@ export interface QuizSessionResponse {
 
 export interface QuizResultRequest {
   rowNumber: number;
-  status: Status | null;
   lastTested: string | null;
+  intervalSeconds: number | null;
   grade: Grade;
 }
 

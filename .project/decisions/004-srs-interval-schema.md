@@ -21,10 +21,11 @@ And rather than have the app own/write `Status`, derive it in the sheet — that
 app-vs-user override tension entirely (the user owns the `Status` formula).
 
 ## Decision
-The app owns and writes only **`Last Tested`** and a new **`Review Interval`** (whole days).
+The app owns and writes only **`Last Tested`** (a full ISO **timestamp**) and a new
+**`Review Interval`** (in **seconds**, for fine-grained tuning).
 **`Status` becomes a user-owned, sheet-derived formula column** — the app never writes it.
 
-- **Interval is the stored knowledge state.** Next-review date = `Last Tested + Review Interval`
+- **Interval is the stored knowledge state.** Next-review time = `Last Tested + Review Interval`
   (derived; not stored as app state).
 - **Grades adjust the interval**: `Again` resets it to a short interval; `Hard` / `Good` /
   `Easy` grow it by increasing amounts. (Concrete values are tuning parameters — see the task.)

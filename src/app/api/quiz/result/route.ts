@@ -6,8 +6,8 @@ import type { Grade, KnowledgeItem, QuizResultRequest, QuizResultResponse } from
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
 const GRADES: readonly Grade[] = ['again', 'hard', 'good', 'easy'];
 
-// POST /api/quiz/result — applies the grade (TestMechanism) and writes the new knowledge
-// state (Status / Last Tested) back to the row.
+// POST /api/quiz/result — applies the grade (TestMechanism) and writes the new scheduling
+// state (Last Tested / Review Interval) back to the row. Status is a user formula (decision 004).
 export async function POST(request: Request) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -29,8 +29,8 @@ export async function POST(request: Request) {
     rowNumber: body.rowNumber,
     finnish: '',
     translation: '',
-    status: body.status ?? null,
     lastTested: body.lastTested ?? null,
+    intervalSeconds: body.intervalSeconds ?? null,
   };
 
   const { repo, mechanism } = getQuizService(sheetId);

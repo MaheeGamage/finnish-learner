@@ -75,3 +75,7 @@ A word saved while reading shows up as a row in the user's Google Sheet.
   instructions captured in [docs/setup-guide.md](../../docs/setup-guide.md). Follow-ups continue
   in [[task-007_oauth-token-refresh]] (token refresh) and [[task-008_vocab-sheet-connect-ux]]
   (connect UX + validation + failed-save notices).
+- 2026-06-14: Post-done note — the save flow no longer writes a `Status` cell. Per
+  [[004-srs-interval-schema]] `Status` became a user sheet formula, so a newly-saved word now
+  has only `Finnish`/`Translation` (reads as "New" until first quizzed). Behaviour change made
+  in task-010; recorded here rather than reopening this task.
