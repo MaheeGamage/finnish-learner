@@ -4,6 +4,11 @@ date: 2026-06-13
 superseded-by:
 ---
 
+> **Amended by [[004-srs-interval-schema]] (2026-06-14):** `Status` is no longer app-owned —
+> it became a user-owned sheet formula, and `Review Interval` was added to the app-owned set.
+> Everything else in this decision (one tab, by-header-name, user column freedom, the
+> never-touch-unowned-columns rule) still stands.
+
 ## Context
 The Sheets adapter needs a concrete sheet structure before it can be built. Two questions
 had to be settled: how many tabs, and what columns.

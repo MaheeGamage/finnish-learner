@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getSheetsClient } from "@/lib/googleSheetsClient";
 
+// TODO: Remove this route — currently unused by the app. It was an early auth/Sheets
+// smoke-test; sheet-specific checks now live in /api/sheets/validate. Only docs/setup-guide.md
+// still references it; drop that reference when removing.
+//
 // GET /api/sheets/verify
 // Creates a test spreadsheet to confirm the Sheets API is reachable.
 // Safe to delete the resulting sheet from Google Drive.

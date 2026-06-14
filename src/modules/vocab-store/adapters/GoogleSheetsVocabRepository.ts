@@ -11,9 +11,12 @@ export const VOCAB_STATUS = {
 
 const REQUIRED_HEADERS = ['Finnish', 'Translation'] as const;
 const APP_HEADERS = ['Status', 'Last Tested'] as const;
-type HeaderMap = Record<string, number>;
+export type HeaderMap = Record<string, number>;
 
-async function getOrProvisionHeaders(
+// Resolves the app-owned column layout for the sheet (by header name, per decision 003),
+// provisioning the Status / Last Tested columns if absent. Shared with the vocab-test
+// knowledge layer so the sheet schema lives in one place.
+export async function getOrProvisionHeaders(
   sheets: sheets_v4.Sheets,
   spreadsheetId: string,
 ): Promise<{ sheetName: string; headers: HeaderMap }> {
