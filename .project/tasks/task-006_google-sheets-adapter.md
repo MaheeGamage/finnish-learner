@@ -1,5 +1,5 @@
 ---
-status: in-review
+status: done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -71,24 +71,7 @@ A word saved while reading shows up as a row in the user's Google Sheet.
 - 2026-06-13: Added env save-toggle (`NEXT_PUBLIC_VOCAB_SAVING_ENABLED`, optional server
   override `VOCAB_SAVING_ENABLED`) with default-on behavior. When disabled, client skips
   save requests and server POST short-circuits safely.
-
-### ⏸ PARKED 2026-06-13 — resume here (next agent, read this first)
-- **Only remaining step in this task:** the env on/off toggle for saving (see Steps). The
-  core "save a word → row in sheet" flow is already implemented and verified live.
-- **Uncommitted.** All of this work is on branch `feature/implement-v2` and is NOT committed:
-  the adapter, `/api/vocab`, `VocabSheetField`, `sheetSettings`, the reader wiring, the
-  `.env.local.example` edit, and the task files for 006–009. Review/commit before big changes.
-- **How to run & test it** (this is a dev container):
-  - Open **http://localhost:43697** — NOT `localhost:3000` directly. 43697 is the forwarded
-    port that matches `AUTH_URL` and the Google OAuth redirect URI; sign-in only works there.
-  - Sign in with Google, then paste a Sheet URL/ID into the **"Vocab sheet"** field in the top
-    nav. The sheet needs `Finnish` and `Translation` headers in row 1; the app adds
-    `Status` / `Last Tested` itself. Sheet id is stored in localStorage, sent as the
-    `x-vocab-sheet-id` header.
-  - **Known gotcha:** the Google access token expires ~1h after sign-in and is NOT refreshed,
-    so saves start failing with a 401 `invalid_token` (visible only in the server terminal —
-    saves are fire-and-forget). Recovery = full **sign out → sign in**. Permanent fix is
-    [[task-007_oauth-token-refresh]].
-- **Follow-ups queued:** [[task-007_oauth-token-refresh]] (token refresh), [[task-008_vocab-sheet-connect-ux]]
-  (friendlier connect UI + mobile nav-overlap fix + sheet validation), [[task-009_save-failure-notifications]]
-  (non-blocking notice on failed saves). task-008 ↔ 009 share a toast/notification component.
+- 2026-06-14: **Done** [human]. All steps complete; core save flow verified live. Setup/run
+  instructions captured in [docs/setup-guide.md](../../docs/setup-guide.md). Follow-ups continue
+  in [[task-007_oauth-token-refresh]] (token refresh), [[task-008_vocab-sheet-connect-ux]]
+  (connect UX + validation), [[task-009_save-failure-notifications]] (failed-save notices).
