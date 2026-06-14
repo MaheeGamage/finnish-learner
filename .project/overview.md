@@ -26,11 +26,9 @@ translation and linguistic context as you read.
 <!-- 001-plan-version-2 — achieved 2026-06-12 (omitted per convention) -->
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
-<!-- - [google-oauth-flow](tasks/task-005_google-oauth-flow.md) — done 2026-06-13 -->
 <!-- - [google-sheets-adapter](tasks/task-006_google-sheets-adapter.md) — done 2026-06-14 -->
 - [oauth-token-refresh](tasks/task-007_oauth-token-refresh.md) — to-do
 - [vocab-sheet-connect-ux](tasks/task-008_vocab-sheet-connect-ux.md) — to-do
-- [save-failure-notifications](tasks/task-009_save-failure-notifications.md) — to-do
 
 
 ## Output locations
@@ -57,6 +55,4 @@ translation and linguistic context as you read.
 ## Notes
 
 - Remove characters like . or ! or anything else that not a letter before sending a word for translation
-
-- Human need to review task 7,8,9 before starting - IIMPORTANT
 - Need to check whether we can reduce the google oauth scope to single seet rather than having full `spreadsheets` scope.

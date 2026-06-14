@@ -73,5 +73,5 @@ A word saved while reading shows up as a row in the user's Google Sheet.
   save requests and server POST short-circuits safely.
 - 2026-06-14: **Done** [human]. All steps complete; core save flow verified live. Setup/run
   instructions captured in [docs/setup-guide.md](../../docs/setup-guide.md). Follow-ups continue
-  in [[task-007_oauth-token-refresh]] (token refresh), [[task-008_vocab-sheet-connect-ux]]
-  (connect UX + validation), [[task-009_save-failure-notifications]] (failed-save notices).
+  in [[task-007_oauth-token-refresh]] (token refresh) and [[task-008_vocab-sheet-connect-ux]]
+  (connect UX + validation + failed-save notices).

@@ -18,6 +18,9 @@ criterion. Add refresh-token rotation in the NextAuth `jwt` callback.
 ## Done when
 Vocab saves keep working after the original access token's ~1h lifetime, with no manual re-sign-in.
 
+## Human comments
+- I'm not sure about 1h expiration. Felt it expire more soonner. Other than this, rest of the description seems correct.
+
 ## Outputs
 <!-- fill in as work completes -->
 
