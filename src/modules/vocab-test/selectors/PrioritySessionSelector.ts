@@ -18,6 +18,10 @@ export interface PriorityConfig {
   jitter: number;
   // Interval (seconds) at/above which a word counts as Known for weighting (mirrors the sheet).
   knownThresholdSeconds: number;
+  // Number of due Learning words at which new-word intake is throttled to zero — the new
+  // budget scales linearly from full (no backlog) down to 0 at this count, so a large
+  // learning backlog crowds out new words. Must be > 0.
+  learningCapForNew: number;
 }
 
 export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
@@ -27,6 +31,7 @@ export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
   overdueCapDays: 30,
   jitter: 0.5,
   knownThresholdSeconds: DEFAULT_KNOWN_THRESHOLD_SECONDS,
+  learningCapForNew: 8,
 };
 
 const isNew = (item: KnowledgeItem) => !item.lastTested || item.intervalSeconds == null;
@@ -65,9 +70,15 @@ export function createPrioritySessionSelector(
       const news = candidates.filter((c) => isNew(c.item));
       const reviews = candidates.filter((c) => !isNew(c.item));
 
-      // Reserve up to newRatio of the session for new words, then fill from whichever pool
-      // still has items.
-      const newBudget = Math.min(news.length, Math.floor(size * config.newRatio));
+      // Adaptive new-word budget: start from the newRatio cap, then scale it down by the
+      // due-Learning backlog (focus on words being learned before adding new ones). Hits 0
+      // once due-Learning ≥ learningCapForNew.
+      const learningDue = reviews.filter(
+        (c) => deriveStage(c.item, config.knownThresholdSeconds) === 'Learning',
+      ).length;
+      const pressure = Math.max(0, 1 - learningDue / config.learningCapForNew);
+      const newBudget = Math.min(news.length, Math.floor(size * config.newRatio * pressure));
+      // Remaining slots go to reviews; the backfill below tops up from any pool if short.
       const picked = [...news.slice(0, newBudget), ...reviews.slice(0, size - newBudget)];
       if (picked.length < size) {
         const used = new Set(picked.map((c) => c.item.rowNumber));

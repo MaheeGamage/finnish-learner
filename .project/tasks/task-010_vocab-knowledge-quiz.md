@@ -169,3 +169,8 @@ persisted in the Google Sheet (read → save → quiz → knowledge updated).
   alternative (header comment flags it; conforms to the current interface) until the SRS is final.
 - 2026-06-14: **Verified live & approved** [human] — quiz works end-to-end; ready to close.
   Moved to in-review for the [human] to flip to done.
+- 2026-06-14: Post-done enhancement [human + ai] — adaptive new-word intake in the selector:
+  the `newRatio` cap now scales down by the due-`Learning` backlog (focus on words being
+  learned). New config `learningCapForNew` (default 8) = the due-Learning count at which new
+  intake hits 0; full `newRatio` when there's no backlog. Contained to `PrioritySessionSelector`.
+  typecheck + lint clean.
