@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createGoogleSheetsVocabRepository } from '@/modules/vocab-store/adapters/GoogleSheetsVocabRepository';
+import { isServerVocabSavingEnabled } from '@/modules/vocab-store/vocabSavingFlag';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
 
@@ -18,6 +19,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+  if (!isServerVocabSavingEnabled()) {
+    return NextResponse.json({ ok: true, skipped: 'disabled' });
+  }
 
   const sheetId = request.headers.get(SHEET_ID_HEADER);
   if (!sheetId) return NextResponse.json({ error: 'No vocabulary sheet configured' }, { status: 400 });

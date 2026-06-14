@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: in-review
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -26,7 +26,7 @@ interfaces are already in place — this task designs the sheet and builds the a
       via `x-vocab-sheet-id` header) → adapter. Sheet chosen via "Vocab sheet" field in nav.
 - [x] Verify: sign in → save a word while reading → open Google Sheet → row appears.
       Confirmed live by [human] 2026-06-13.
-- [ ] Add an env flag to enable/disable saving (default on), so the user can read without
+- [x] Add an env flag to enable/disable saving (default on), so the user can read without
       writing to the sheet. (Impl detail: client `NEXT_PUBLIC_*` vs server-side gate — decide
       when building.)
 
@@ -68,6 +68,9 @@ A word saved while reading shows up as a row in the user's Google Sheet.
 - 2026-06-13: Reopened (in-review → in-progress) to add an env on/off toggle for saving
   [human request]. The core sheet-save flow stays verified; only the toggle is outstanding.
   Sheet-connect UX + validation split to [[task-008_vocab-sheet-connect-ux]].
+- 2026-06-13: Added env save-toggle (`NEXT_PUBLIC_VOCAB_SAVING_ENABLED`, optional server
+  override `VOCAB_SAVING_ENABLED`) with default-on behavior. When disabled, client skips
+  save requests and server POST short-circuits safely.
 
 ### ⏸ PARKED 2026-06-13 — resume here (next agent, read this first)
 - **Only remaining step in this task:** the env on/off toggle for saving (see Steps). The

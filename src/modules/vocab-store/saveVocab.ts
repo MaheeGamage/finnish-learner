@@ -1,4 +1,5 @@
 import { getVocabSheetId } from './sheetSettings';
+import { isClientVocabSavingEnabled } from './vocabSavingFlag';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
 
@@ -8,6 +9,8 @@ export async function saveVocab(
   sourceLang: string,
   targetLang: string,
 ): Promise<void> {
+  if (!isClientVocabSavingEnabled()) return;
+
   const sheetId = getVocabSheetId();
   // No sheet configured yet — nothing to save to. Reading is unaffected.
   if (!sheetId) return;
