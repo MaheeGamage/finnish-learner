@@ -25,8 +25,8 @@ translation and linguistic context as you read.
 
 <!-- 001-plan-version-2 — achieved 2026-06-12 (omitted per convention) -->
 
-### [[002-build-v2-mvp]] — draft
-<!-- No tasks yet. -->
+### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
+- [oauth-token-refresh](tasks/task-007_oauth-token-refresh.md) — to-do (parked aside)
 
 
 ## Output locations
@@ -48,3 +48,11 @@ translation and linguistic context as you read.
 - Code → project root
 - Docs → /docs
 - Decisions → [.project/decisions/](.project/decisions/)
+
+
+## Notes
+
+- Remove characters like . or ! or anything else that not a letter before sending a word for translation
+- Need to check whether we can reduce the google oauth scope to single seet rather than having full `spreadsheets` scope.
+- UI need to be improved
+- There is TODO in here - src/app/api/sheets/verify/route.ts

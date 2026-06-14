@@ -1,3 +1,5 @@
+DEPRECATED
+
 # .agent/ — Agent Session Logs
 
 This directory stores a log of every AI agent session that has worked on this repository.

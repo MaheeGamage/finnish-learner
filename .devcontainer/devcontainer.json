@@ -1,0 +1,28 @@
+{
+  "name": "finnish-learner",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js dev server",
+      "onAutoForward": "notify"
+    }
+  },
+  // Persist Claude Code login across container rebuilds, then install deps.
+  "mounts": [
+    "source=finnish-learner-claude-config,target=/home/node/.claude,type=volume"
+  ],
+  "postCreateCommand": "sudo chown -R node:node /home/node/.claude && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+  "remoteUser": "node"
+}

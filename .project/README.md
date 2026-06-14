@@ -40,7 +40,8 @@ scaffold the whole project at once.
 ## Conventions
 
 - **Naming** — goals and decisions are numbered + slugged (`001-knowledge-search.md`);
-  tasks are slug-only (`survey-existing-tools.md`). Titles come from filenames.
+  tasks are numbered with a `task-` prefix and underscore (`task-001_survey-existing-tools.md`).
+  Titles come from filenames.
 - **Links** — use `[[wikilinks]]` to connect files (a task's `goal:`, a constraint's origin,
   an output, a superseding decision).
 - **Source of truth** — trust the goal/task files over the Overview; the Overview is
@@ -72,7 +73,7 @@ not a checklist to run in one go.
 Copy the matching template and fill it (its comments guide you, then delete them):
 
 - New goal → `templates/goal.md` → `goals/NNN-slug.md`
-- New task → `templates/task.md` → `tasks/slug.md`
+- New task → `templates/task.md` → `tasks/task-NNN_slug.md`
 - New decision → `templates/decision.md` → `decisions/NNN-slug.md`
 
 `overview.md` and `constraints.md` already exist — edit them in place.

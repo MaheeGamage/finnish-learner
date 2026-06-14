@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import TranslatableWord from '@/components/TranslatableWord';
-import ContentSelector from '@/components/ContentSelector';
-import SelectionTranslationPopup from '@/components/SelectionTranslationPopup';
-import SessionSummary from '@/components/SessionSummary';
-import { BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode, SESSION_CONTENT_SNIPPET_LENGTH } from '@/config/constants';
-import { 
-  saveInputText, 
-  getStoredInputText, 
-  saveViewState, 
+import {
+  TranslatableWord,
+  ContentSelector,
+  SelectionTranslationPopup,
+  BACKGROUND_COLORS,
+  TRANSLATION_MODES,
+  TranslationMode,
+  saveInputText,
+  getStoredInputText,
+  saveViewState,
   getStoredViewState,
   saveReadingScrollY,
   getReadingScrollY,
@@ -17,15 +18,19 @@ import {
   getLastTranslatedRange,
   clearReadingScrollY,
   clearLastTranslatedRange,
+  type LastTranslatedRange,
+} from '@/modules/reader';
+import {
+  SessionSummary,
+  SESSION_CONTENT_SNIPPET_LENGTH,
   saveSessionTranslations,
   getSessionTranslations,
   clearSessionTranslations,
   saveSessionStart,
   getSessionStart,
   clearSessionStart,
-  type LastTranslatedRange,
-} from '@/utils/textStorage';
-import type { TranslationEvent } from '@/types/session';
+  type TranslationEvent,
+} from '@/modules/session-history';
 
 export default function Home() {
   const [text, setText] = useState('');
