@@ -149,8 +149,7 @@ export default function ConnectSheetModal({
             <span aria-hidden>ℹ️</span>
             <span>
               Add <strong>Finnish</strong> and <strong>Translation</strong> headers in row 1. The
-              app adds <strong>Status</strong> and <strong>Last Tested</strong> itself.
-            </span>
+              app adds <strong>Last Tested</strong> and <strong>Review Interval</strong> itself.
           </div>
         )}
 
