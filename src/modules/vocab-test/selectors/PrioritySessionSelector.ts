@@ -29,7 +29,7 @@ export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
   knownThresholdSeconds: DEFAULT_KNOWN_THRESHOLD_SECONDS,
 };
 
-const isNew = (item: KnowledgeItem) => item.lastTested === null;
+const isNew = (item: KnowledgeItem) => !item.lastTested || item.intervalSeconds == null;
 
 function randomDirection(): Direction {
   return Math.random() < 0.5 ? 'fi-en' : 'en-fi';
