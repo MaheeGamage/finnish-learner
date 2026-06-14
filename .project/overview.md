@@ -26,10 +26,7 @@ translation and linguistic context as you read.
 <!-- 001-plan-version-2 — achieved 2026-06-12 (omitted per convention) -->
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
-<!-- - [google-sheets-adapter](tasks/task-006_google-sheets-adapter.md) — done 2026-06-14 -->
-- [vocab-knowledge-quiz](tasks/task-010_vocab-knowledge-quiz.md) — to-do (design-first)
 - [oauth-token-refresh](tasks/task-007_oauth-token-refresh.md) — to-do (parked aside)
-<!-- - [vocab-sheet-connect-ux](tasks/task-008_vocab-sheet-connect-ux.md) — done -->
 
 
 ## Output locations

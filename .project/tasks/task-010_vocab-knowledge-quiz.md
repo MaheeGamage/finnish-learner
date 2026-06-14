@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -78,8 +78,8 @@ interval ≥ threshold → Known.
       (Again/Hard/Good/Easy), progress bar, end-of-session summary, + loading/no-sheet/
       unauthenticated/error/empty states. Keyboard: space reveals, 1–4 grade.
 - [x] Top-bar "Test" link (+ "Read") via `NavLinks` with active state; `/test` is its own route.
-- [ ] Verify: take a quiz → `Status` / `Last Tested` update in the sheet; due scheduling holds.
-      **(needs live [human] test)**
+- [x] Verify: take a quiz → `Last Tested` / `Review Interval` update in the sheet; due
+      scheduling holds. Confirmed live by [human] 2026-06-14.
 
 ## Done when
 A user can be quizzed on their vocabulary and each answer updates how well that word is known,
@@ -163,4 +163,9 @@ persisted in the Google Sheet (read → save → quiz → knowledge updated).
   now in **seconds** (field renamed `intervalDays`→`intervalSeconds` throughout; defaults via a
   `SECONDS_PER_DAY` constant; known threshold `DEFAULT_KNOWN_THRESHOLD_SECONDS`). Sheet formulas
   updated (Status threshold `21*86400`; Due parses the timestamp + converts s→days). Decision 004
-  reworded (timestamp + seconds). typecheck + lint + build clean. Open: live [human] re-test.
+  reworded (timestamp + seconds). typecheck + lint + build clean.
+- 2026-06-14: Polish [ai]: loading spinner on the quiz; guarded the mount fetch so React Strict
+  Mode (dev) no longer double-calls `/api/quiz/session`. `LeitnerMechanism` kept as an unused
+  alternative (header comment flags it; conforms to the current interface) until the SRS is final.
+- 2026-06-14: **Verified live & approved** [human] — quiz works end-to-end; ready to close.
+  Moved to in-review for the [human] to flip to done.
