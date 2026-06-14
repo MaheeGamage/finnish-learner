@@ -19,10 +19,15 @@ export async function POST(request: Request) {
   if (
     !body ||
     typeof body.rowNumber !== 'number' ||
+    !Number.isInteger(body.rowNumber) ||
+    body.rowNumber < 2 ||
     typeof body.grade !== 'string' ||
     !GRADES.includes(body.grade as Grade)
   ) {
-    return NextResponse.json({ error: 'rowNumber and a valid grade are required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'rowNumber (integer >= 2) and a valid grade are required' },
+      { status: 400 },
+    );
   }
 
   const item: KnowledgeItem = {
