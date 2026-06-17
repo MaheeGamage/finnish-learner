@@ -7,14 +7,17 @@ import UserMenuDropdown from './UserMenuDropdown';
 export default async function UserMenu() {
   const session = await auth();
 
-  if (!session?.user) {
+  // No session, or the refresh token could no longer be renewed → prompt sign-in.
+  // On expiry we label it differently so the user knows their session lapsed.
+  if (!session?.user || session.error) {
+    const expired = Boolean(session?.error);
     return (
       <form action={signInWithGoogle}>
         <button
           type="submit"
           className="rounded-full bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
         >
-          Sign in
+          {expired ? 'Session expired — sign in' : 'Sign in'}
         </button>
       </form>
     );

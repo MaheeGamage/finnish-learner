@@ -26,7 +26,7 @@ translation and linguistic context as you read.
 <!-- 001-plan-version-2 — achieved 2026-06-12 (omitted per convention) -->
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
-- [oauth-token-refresh](tasks/task-007_oauth-token-refresh.md) — to-do (parked aside)
+- No open tasks — all complete; pending re-evaluation against the goal's success criteria.
 
 
 ## Output locations
@@ -56,3 +56,4 @@ translation and linguistic context as you read.
 - Need to check whether we can reduce the google oauth scope to single seet rather than having full `spreadsheets` scope.
 - UI need to be improved
 - There is TODO in here - src/app/api/sheets/verify/route.ts
+- Remove AGENTS.md file or point it to readme file in this .project folder
