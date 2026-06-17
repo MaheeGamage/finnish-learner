@@ -11,7 +11,7 @@ It implements the `TestMechanism` port (`../ports/TestMechanism.ts`):
 - `grade(item, grade, now)` → the new `ReviewState` to persist (`lastTested`, `intervalSeconds`).
 - `dueAt(item, now)` → the `Date` the word becomes due again.
 
-The default implementation is **`IntervalMechanism`**. It's swappable — any object satisfying
+The current default wiring uses **`IntervalMechanism`**. It's swappable — any object satisfying
 the port can replace it in `../service.ts` (e.g. `LeitnerMechanism`, kept as an alternative).
 
 ---
