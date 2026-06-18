@@ -1,8 +1,7 @@
 import type { TestMechanism } from '../ports/TestMechanism';
 import type { Grade, KnowledgeItem, ReviewState } from '../types';
 
-// const SECONDS_PER_DAY = 86_400;
-// const SECONDS_PER_HOUR = 3_600;
+const SECONDS_PER_DAY = 86_400;
 const SECONDS_PER_MINUTE = 60;
 
 // Interval-based SRS (decision 004). The stored knowledge state is a per-word interval in
@@ -16,14 +15,17 @@ export interface IntervalConfig {
   multiplier: Record<Grade, number>;
 }
 
+// Mirrors PRESETS.standard in settings.ts (the app passes the user's tuning explicitly; this is
+// the intrinsic fallback for standalone construction). Day-scale so a `good`-graded word grows
+// past the 21-day Known threshold in ~5 reviews — the old minute-scale defaults never did.
 export const DEFAULT_INTERVAL_CONFIG: IntervalConfig = {
   firstReview: {
     again: 1 * SECONDS_PER_MINUTE,
-    hard: 2 * SECONDS_PER_MINUTE,
-    good: 3 * SECONDS_PER_MINUTE,
-    easy: 5 * SECONDS_PER_MINUTE,
+    hard: 10 * SECONDS_PER_MINUTE,
+    good: 1 * SECONDS_PER_DAY,
+    easy: 4 * SECONDS_PER_DAY,
   },
-  multiplier: { again: 0, hard: 1.2, good: 2, easy: 3 },
+  multiplier: { again: 0, hard: 1.2, good: 2.5, easy: 3.5 },
 };
 
 export function createIntervalMechanism(

@@ -1,4 +1,5 @@
 import { getVocabSheetId } from '@/modules/vocab-store';
+import { loadTuning } from './settings';
 import type {
   Grade,
   QuizCard,
@@ -8,6 +9,10 @@ import type {
 } from './types';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
+const TUNING_HEADER = 'x-srs-tuning';
+
+// The user's saved SRS settings (task-011), sent to the API so grading/selection use them.
+const tuningHeader = (): string => JSON.stringify(loadTuning());
 
 export type QuizSessionResult =
   | { ok: true; cards: QuizCard[] }
@@ -19,7 +24,9 @@ export async function fetchQuizSession(): Promise<QuizSessionResult> {
   if (!sheetId) return { ok: false, reason: 'no-sheet' };
   let res: Response;
   try {
-    res = await fetch('/api/quiz/session', { headers: { [SHEET_ID_HEADER]: sheetId } });
+    res = await fetch('/api/quiz/session', {
+      headers: { [SHEET_ID_HEADER]: sheetId, [TUNING_HEADER]: tuningHeader() },
+    });
   } catch {
     return { ok: false, reason: 'error' };
   }
@@ -42,7 +49,11 @@ export async function submitQuizResult(
   try {
     const res = await fetch('/api/quiz/result', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', [SHEET_ID_HEADER]: sheetId },
+      headers: {
+        'Content-Type': 'application/json',
+        [SHEET_ID_HEADER]: sheetId,
+        [TUNING_HEADER]: tuningHeader(),
+      },
       body: JSON.stringify(payload),
     });
     if (!res.ok) return { ok: false };

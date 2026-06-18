@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { href: '/', label: 'Read' },
   { href: '/test', label: 'Test' },
+  { href: '/settings', label: 'Settings' },
 ];
 
 // Top-bar primary navigation. /test is a standalone route (Vocab Test works without the Reader).
