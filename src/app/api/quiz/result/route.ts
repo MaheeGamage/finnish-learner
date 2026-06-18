@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getQuizService } from '@/modules/vocab-test/service';
+import { parseTuningJson, DEFAULT_TUNING } from '@/modules/vocab-test/settings';
 import type { Grade, KnowledgeItem, QuizResultRequest, QuizResultResponse } from '@/modules/vocab-test/types';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
+const TUNING_HEADER = 'x-srs-tuning';
 const GRADES: readonly Grade[] = ['again', 'hard', 'good', 'easy'];
 
 // POST /api/quiz/result — applies the grade (TestMechanism) and writes the new scheduling
@@ -38,7 +40,9 @@ export async function POST(request: Request) {
     intervalSeconds: body.intervalSeconds ?? null,
   };
 
-  const { repo, mechanism } = getQuizService(sheetId);
+  // Client-supplied tuning (task-011) drives grade → interval; validated with a default fallback.
+  const tuning = parseTuningJson(request.headers.get(TUNING_HEADER)) ?? DEFAULT_TUNING;
+  const { repo, mechanism } = getQuizService(sheetId, tuning);
   const state = mechanism.grade(item, body.grade as Grade, new Date());
   const ok = await repo.recordResult(body.rowNumber, state);
   if (!ok) return NextResponse.json({ ok: false } satisfies QuizResultResponse, { status: 502 });

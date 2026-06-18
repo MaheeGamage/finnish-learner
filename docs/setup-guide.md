@@ -120,6 +120,10 @@ sheet (`Finnish` = A, `Last Tested` = G, `Review Interval` = H below):
 Never tested → **New**; tested → **Learning**; interval ≥ 21 days → **Known**. `21*86400` is the
 threshold in seconds (21 days) — change it to retune.
 
+> Tip: the in-app **Settings** page (top bar) lets you pick a pace preset (Standard / Brisk /
+> Rapid) or set your own, and shows the exact `Status` formula matched to your chosen Known
+> threshold to copy here — so the sheet and the quiz stay in sync.
+
 Optionally, a `Due` column for at-a-glance sorting. Since `Last Tested` is an ISO timestamp
 (text) and the interval is in seconds, parse it and convert seconds → days:
 
