@@ -137,3 +137,7 @@ reaches **Known** end-to-end (quiz → interval grows past threshold → Status 
   in `useState` init (server rendered Standard, client rendered the saved profile). Now seeds
   `DEFAULT_TUNING` and loads the saved config in a post-mount `useEffect`. Otherwise [human]
   reports the UI is good.
+- 2026-06-18: Mobile overflow fix [human-reported, post-done] — the seconds rows didn't wrap, so
+  `label + input + "seconds" + "= 1 day"` overflowed narrow screens and scrolled the page (and top
+  bar) sideways. Rows now `flex-wrap` with a narrower input and an unbreakable read-back; the save
+  bar wraps too; card padding eased on mobile. typecheck + lint clean.
