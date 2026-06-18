@@ -171,7 +171,7 @@ export default function SettingsPanel() {
           {GRADE_META.filter((g) => g.grade !== 'again').map(({ grade, label, dot }) => (
             <div key={grade} className="flex items-center gap-3">
               <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
-              <span className="w-16 shrink-0 text-sm font-medium text-gray-700">{label}</span>
+              <span className="w-14 shrink-0 text-sm font-medium text-gray-700">{label}</span>
               <span className="text-sm text-gray-400">×</span>
               <input
                 type="number"
@@ -242,12 +242,12 @@ export default function SettingsPanel() {
 
       {/* Sticky save bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
           <span className="text-sm text-gray-500">
             {dirty ? 'Unsaved changes' : 'All changes saved'}
             {!valid && <span className="ml-2 text-red-600">· some values are invalid</span>}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => setDraft(DEFAULT_TUNING)}
@@ -271,7 +271,7 @@ export default function SettingsPanel() {
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">{children}</div>;
+  return <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">{children}</div>;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -294,21 +294,21 @@ function SecondsRow({
 }) {
   const invalid = !Number.isFinite(value) || value < min;
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {dot && <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />}
-      <span className="w-16 shrink-0 text-sm font-medium text-gray-700">{label}</span>
+      <span className="w-14 shrink-0 text-sm font-medium text-gray-700">{label}</span>
       <input
         type="number"
         min={min}
         step={1}
         value={Number.isFinite(value) ? value : ''}
         onChange={(e) => onChange(Math.trunc(e.target.valueAsNumber))}
-        className={`w-32 rounded-xl border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${
+        className={`w-24 rounded-xl border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${
           invalid ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:ring-indigo-200'
         }`}
       />
       <span className="text-sm text-gray-400">seconds</span>
-      <span className="text-sm text-gray-500">= {humanizeSeconds(value)}</span>
+      <span className="whitespace-nowrap text-sm text-gray-500">= {humanizeSeconds(value)}</span>
     </div>
   );
 }
