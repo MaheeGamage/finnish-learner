@@ -36,14 +36,17 @@ export function createGoogleSheetsKnowledgeRepository(spreadsheetId: string): Kn
       const tr = headers['Translation'];
       const lt = headers['Last Tested'];
       const iv = headers['Review Interval'];
+      const ex = headers['Example']; // user-owned, optional — read-only, never written
 
       return rows
         .map((row, i): KnowledgeItem => {
           const lastRaw = String(row[lt] ?? '').trim();
+          const exampleRaw = ex === undefined ? '' : String(row[ex] ?? '').trim();
           return {
             rowNumber: i + 2, // data starts at sheet row 2
             finnish: String(row[fi] ?? '').trim(),
             translation: String(row[tr] ?? '').trim(),
+            example: exampleRaw || null,
             lastTested: lastRaw || null,
             intervalSeconds: parseInterval(String(row[iv] ?? '').trim()),
           };

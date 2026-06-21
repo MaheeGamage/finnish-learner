@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { TranslatableText, TRANSLATION_MODES } from '@/modules/reader';
 import { fetchQuizSession, submitQuizResult } from '../client';
 import type { Grade, QuizCard } from '../types';
 
@@ -191,7 +192,26 @@ export default function QuizSession() {
         <p className="mt-6 text-center text-3xl font-semibold text-gray-900">{prompt}</p>
 
         {revealed ? (
-          <p className="mt-4 border-t border-gray-100 pt-4 text-center text-2xl text-indigo-700">{answer}</p>
+          <>
+            <p className="mt-4 border-t border-gray-100 pt-4 text-center text-2xl text-indigo-700">{answer}</p>
+            {card.item.example && (
+              <div className="mt-4 border-t border-gray-100 pt-4">
+                <p className="mb-1.5 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
+                  Example
+                </p>
+                {/* Learning-language example with the Reader's hover/touch + selection translation,
+                    available only here (after reveal). */}
+                <div className="whitespace-pre-wrap text-center text-lg leading-relaxed text-gray-700">
+                  <TranslatableText
+                    text={card.item.example}
+                    sourceLang="fi"
+                    targetLang="en"
+                    translationMode={TRANSLATION_MODES.BOTH}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="mt-6 flex justify-center">
             <button

@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     rowNumber: body.rowNumber,
     finnish: '',
     translation: '',
+    example: null,
     lastTested: body.lastTested ?? null,
     intervalSeconds: body.intervalSeconds ?? null,
   };

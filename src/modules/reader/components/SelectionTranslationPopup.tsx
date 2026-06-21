@@ -11,6 +11,8 @@ interface SelectionTranslationPopupProps {
   targetLang: 'en' | 'fi';
   translationMode: TranslationMode;
   isInputMode: boolean;
+  /** CSS selector for the element that scopes which selections are translated. */
+  scopeSelector?: string;
   onTranslated: (range: { start: number; end: number }) => void;
   onSelectionTranslated?: (word: string, translation: string, type: 'selection') => void;
 }
@@ -20,6 +22,7 @@ export default function SelectionTranslationPopup({
   targetLang,
   translationMode,
   isInputMode,
+  scopeSelector = '[data-translatable-text]',
   onTranslated,
   onSelectionTranslated,
 }: SelectionTranslationPopupProps) {
@@ -61,7 +64,7 @@ export default function SelectionTranslationPopup({
 
     const isWithinReadingContent = (node: Node | null | undefined) => {
       const element = getElementFromNode(node);
-      return !!element?.closest?.('#reading-content');
+      return !!element?.closest?.(scopeSelector);
     };
 
     const handleSelectionChange = async () => {
@@ -167,7 +170,7 @@ export default function SelectionTranslationPopup({
         clearTimeout(debounceTimer);
       }
     };
-  }, [sourceLang, targetLang, translationMode, isInputMode, onTranslated, onSelectionTranslated]);
+  }, [sourceLang, targetLang, translationMode, isInputMode, scopeSelector, onTranslated, onSelectionTranslated]);
 
   if (!showSubtitlePopup) return null;
 

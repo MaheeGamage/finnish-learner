@@ -5,6 +5,7 @@
  */
 
 export { default as TranslatableWord } from './components/TranslatableWord';
+export { default as TranslatableText } from './components/TranslatableText';
 export { default as ContentSelector } from './components/ContentSelector';
 export { default as SelectionTranslationPopup } from './components/SelectionTranslationPopup';
 
