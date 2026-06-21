@@ -15,6 +15,7 @@ export interface KnowledgeItem {
   rowNumber: number; // 1-based sheet row (header is row 1)
   finnish: string;
   translation: string;
+  example: string | null; // user-owned `Example` column (learning language); read-only, null if absent
   lastTested: string | null; // ISO timestamp, or null
   intervalSeconds: number | null; // Review Interval in seconds; null = never reviewed (decision 004)
 }
