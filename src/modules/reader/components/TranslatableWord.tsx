@@ -86,32 +86,45 @@ export default function TranslatableWord({
             const wordRect = wordRef.current.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
             const viewportWidth = window.innerWidth;
-            
+
             if (wordRect.width === 0) return;
-            
-            // Pre-calculate tooltip dimensions based on content
-            const fontSize = 14; // text-sm in pixels
-            const horizontalPadding = 16; // px-2 in pixels
-            const tooltipContent = getTooltipContent(translation);
-            const estimatedTooltipWidth = Math.min(
-                tooltipContent.length * (fontSize * 0.5) + horizontalPadding,
-                viewportWidth * 0.8
-            );
-            const estimatedTooltipHeight = fontSize * 1.5 + 8; // Line height + vertical padding
-            
+
             const minMargin = 8;
+
+            // Measure the tooltip's real rendered size (it's already in the DOM, just invisible).
+            // offsetWidth/Height ignore the scale() transform, so we get the true footprint. Fall
+            // back to a rough estimate only before the element first mounts.
+            let tooltipWidth: number;
+            let tooltipHeight: number;
+            if (tooltipRef.current) {
+                tooltipWidth = tooltipRef.current.offsetWidth;
+                tooltipHeight = tooltipRef.current.offsetHeight;
+            } else {
+                const fontSize = 14; // text-sm in pixels
+                const horizontalPadding = 16; // px-2 in pixels
+                const tooltipContent = getTooltipContent(translation);
+                tooltipWidth = Math.min(
+                    tooltipContent.length * (fontSize * 0.5) + horizontalPadding,
+                    viewportWidth - minMargin * 2
+                );
+                tooltipHeight = fontSize * 1.5 + 8; // Line height + vertical padding
+            }
+
             const spaceAbove = wordRect.top - minMargin;
             const spaceBelow = viewportHeight - wordRect.bottom - minMargin;
-            
+
             const position = spaceAbove > spaceBelow ? 'top' : 'bottom';
             setTooltipPosition(position);
 
-            let left = Math.round(wordRect.left + (wordRect.width / 2) - (estimatedTooltipWidth / 2));
-            left = Math.max(minMargin, Math.min(left, viewportWidth - estimatedTooltipWidth - minMargin));
-            
+            // Centre on the word, then clamp so neither edge leaves the viewport. The max-width on
+            // the tooltip guarantees tooltipWidth <= viewport - 2*margin, so maxLeft >= minMargin.
+            let left = Math.round(wordRect.left + (wordRect.width / 2) - (tooltipWidth / 2));
+            const maxLeft = viewportWidth - tooltipWidth - minMargin;
+            left = Math.max(minMargin, Math.min(left, maxLeft));
+
             const verticalOffset = 6;
-            const top = Math.round(position === 'top' 
-                ? wordRect.top - estimatedTooltipHeight - verticalOffset
+            const top = Math.round(position === 'top'
+                ? wordRect.top - tooltipHeight - verticalOffset
                 : wordRect.bottom + verticalOffset);
 
             // Only update if position has changed significantly
@@ -341,14 +354,15 @@ export default function TranslatableWord({
                         opacity: isTooltipReady ? 1 : 0,
                         transform: `scale(${isTooltipReady ? 1 : 0.98})`,
                         transformOrigin: tooltipPosition === 'top' ? 'bottom center' : 'top center',
-                        transition: isTooltipReady 
-                            ? 'opacity 0.12s ease-out, transform 0.12s ease-out' 
+                        transition: isTooltipReady
+                            ? 'opacity 0.12s ease-out, transform 0.12s ease-out'
                             : 'none',
                         visibility: isHighlighted && translation ? 'visible' : 'hidden',
                         willChange: 'transform, opacity',
+                        maxWidth: 'calc(100vw - 16px)',
                     }}
-                    className="px-2 py-1 text-sm text-white bg-gray-800/90 rounded shadow-lg z-[9999] 
-                        whitespace-nowrap pointer-events-none select-none backdrop-blur-[2px]"
+                    className="px-2 py-1 text-sm text-white bg-gray-800/90 rounded shadow-lg z-[9999]
+                        pointer-events-none select-none backdrop-blur-[2px]"
                 >
                     {/* Lemma line: word (form) [pos] */}
                     <span className="font-medium">
