@@ -26,7 +26,8 @@ translation and linguistic context as you read.
 <!-- 001-plan-version-2 — achieved 2026-06-12 (omitted per convention) -->
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
-- No pending tasks at the moment
+- [[task-014_cap-new-word-intake]] — to-do
+- [[task-015_yle-selko-content-source]] — to-do
 
 
 ## Output locations
