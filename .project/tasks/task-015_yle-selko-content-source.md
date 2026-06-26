@@ -1,5 +1,5 @@
 ---
-status: in-review    # to-do | in-progress | in-review | done
+status: done    # to-do | in-progress | in-review | done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
