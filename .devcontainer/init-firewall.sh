@@ -82,6 +82,7 @@ for domain in \
     "translate.googleapis.com" \
     "www.googleapis.com" \
     "oauth2.googleapis.com" \
+    "fonts.gstatic.com" \
     "docs.google.com"; do
     echo "Resolving $domain..."
     ips=$(dig +noall +answer A "$domain" | awk '$4 == "A" {print $5}')

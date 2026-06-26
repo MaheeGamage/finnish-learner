@@ -4,6 +4,7 @@ import { hasTextSelection } from '../textUtils';
 import { saveVocab } from '@/modules/vocab-store';
 import { TRANSLATION_DELAY_MS, TEXT_COLORS, BACKGROUND_COLORS, TRANSLATION_MODES, TranslationMode } from '../config/readerConfig';
 import { TRANSLATION_CONFIG } from '../config/selectionConfig';
+import type { MorphologyResult } from '@/modules/morphology';
 
 interface TranslatableWordProps {
     word: string;
@@ -16,21 +17,29 @@ interface TranslatableWordProps {
     isActive: boolean;
     isLastTranslated: boolean;
     translationMode: TranslationMode;
+    /** Morphology analyser — absent when sourceLang has no adapter yet. */
+    analyse?: (word: string) => MorphologyResult | null;
 }
 
-export default function TranslatableWord({ 
-    word, 
+export default function TranslatableWord({
+    word,
     tokenIndex,
-    sourceLang, 
-    targetLang, 
-    onHover, 
+    sourceLang,
+    targetLang,
+    onHover,
     onTranslated,
     onWordTranslated,
     isActive,
     isLastTranslated,
-    translationMode 
+    translationMode,
+    analyse,
 }: TranslatableWordProps) {
+    // Strip leading/trailing punctuation for translation and morphology lookups.
+    // The raw `word` (with punctuation) is still rendered in the reading text.
+    const cleanWord = word.replace(/^[^a-zA-ZäöåÄÖÅ]+|[^a-zA-ZäöåÄÖÅ]+$/g, '') || word;
+
     const [translation, setTranslation] = useState<RichTranslation | null>(null);
+    const [morphology, setMorphology] = useState<MorphologyResult | null>(null);
     const [isHighlighted, setIsHighlighted] = useState(false);
     const [tooltipPosition, setTooltipPosition] = useState<'top' | 'bottom'>('top');
     const [tooltipCoords, setTooltipCoords] = useState({ top: 0, left: 0 });
@@ -148,8 +157,9 @@ export default function TranslatableWord({
             setIsTooltipReady(false);
             const result = await fetchRichTranslation(text, sourceLang);
             if (!result) return;
-            
+
             setTranslation(result);
+            setMorphology(analyse?.(text) ?? null);
             // Save to vocabulary (fire-and-forget — does not block reading)
             const displayText = result.definitions[0]?.text || result.fallbackTranslation;
             if (displayText) {
@@ -190,10 +200,12 @@ export default function TranslatableWord({
         if (!translation) {
             setIsTooltipReady(false);
             timerRef.current = setTimeout(() => {
-                handleTranslation(word);
+                handleTranslation(cleanWord);
             }, TRANSLATION_DELAY_MS);
         } else {
             onTranslated(tokenIndex);
+            // Voikko may have finished loading since last hover — retry if no result yet.
+            if (!morphology && analyse) setMorphology(analyse(cleanWord));
             requestAnimationFrame(updateTooltipPosition);
         }
     };
@@ -210,12 +222,13 @@ export default function TranslatableWord({
         onHover();
         setIsHighlighted(true);
         updateTooltipPosition();
-        
+
         // Immediate translation for touch
         if (!translation) {
-            handleTranslation(word);
+            handleTranslation(cleanWord);
         } else {
             onTranslated(tokenIndex);
+            if (!morphology && analyse) setMorphology(analyse(cleanWord));
         }
     };
 
@@ -390,6 +403,20 @@ export default function TranslatableWord({
                     {(translation.definitions[0]?.text || translation.fallbackTranslation) && (
                         <span className="text-gray-200 ml-2">
                             {translation.definitions[0]?.text || translation.fallbackTranslation}
+                        </span>
+                    )}
+
+                    {/* Morphology line — from Voikko; only when the word is inflected */}
+                    {morphology && morphology.formSummary && (
+                        <span className="block text-xs text-indigo-300 mt-0.5 leading-snug">
+                            <span className="text-indigo-200 font-medium">{morphology.baseForm}</span>
+                            {morphology.suffix && (
+                                <span className="text-indigo-400"> {morphology.suffix}</span>
+                            )}
+                            <span className="text-indigo-400"> · {morphology.formSummary}</span>
+                            {morphology.meaning && (
+                                <span className="text-indigo-300"> — {morphology.meaning}</span>
+                            )}
                         </span>
                     )}
                 </span>
