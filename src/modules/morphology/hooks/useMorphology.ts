@@ -22,6 +22,7 @@ export function useMorphology(sourceLang: 'fi' | 'en') {
   useEffect(() => {
     if (sourceLang !== 'fi') return;
 
+    const cache = cacheRef.current;
     const analyzer = new FinnishMorphologyAnalyzer();
     analyzerRef.current = analyzer;
 
@@ -38,7 +39,7 @@ export function useMorphology(sourceLang: 'fi' | 'en') {
       analyzer.terminate();
       analyzerRef.current = null;
       readyRef.current = false;
-      cacheRef.current.clear();
+      cache.clear();
     };
   }, [sourceLang]);
 
