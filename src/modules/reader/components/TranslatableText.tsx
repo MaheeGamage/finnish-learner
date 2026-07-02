@@ -5,6 +5,7 @@ import TranslatableWord from './TranslatableWord';
 import SelectionTranslationPopup from './SelectionTranslationPopup';
 import { BACKGROUND_COLORS, TranslationMode } from '../config/readerConfig';
 import type { LastTranslatedRange } from '../storage';
+import { useMorphology } from '@/modules/morphology';
 
 interface TranslatableTextProps {
     /** The text to make interactive (source/learning language). */
@@ -40,6 +41,7 @@ export default function TranslatableText({
     className,
 }: TranslatableTextProps) {
     const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
+    const analyse = useMorphology(sourceLang);
 
     // Split text preserving newlines and multiple spaces (separators kept as their own tokens).
     const tokens = text
@@ -78,6 +80,7 @@ export default function TranslatableText({
                             isActive={activeWordIndex === key}
                             isLastTranslated={isLastTranslated}
                             translationMode={translationMode}
+                            analyse={analyse}
                         />
                     );
                 })}

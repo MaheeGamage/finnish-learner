@@ -89,4 +89,14 @@ public/
 
 ---
 
+## Third-party Libraries
+
+### `@yongsk0066/voikko`
+
+Finnish morphological analysis (base form + grammatical features shown in the hover tooltip) is powered by [`@yongsk0066/voikko`](https://github.com/yongsk0066/corevoikko) — a Rust rewrite of the authoritative [Voikko](https://voikko.puimula.org/) Finnish NLP library, compiled to WebAssembly. It runs entirely client-side with no server or native binary required, making it compatible with Vercel.
+
+**License:** [MPL 1.1 / GPL 2+ / LGPL 2.1+](https://github.com/yongsk0066/corevoikko/blob/master/LICENSE) — the same tri-license as the upstream Voikko project.
+
+---
+
 > For agent/AI contributor documentation see [agent.md](agent.md) and [.agent/](.agent/).

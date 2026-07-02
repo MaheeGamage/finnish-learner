@@ -5,10 +5,12 @@
      the goal/task files and is regenerable; never trust it over those files. -->
 
 ## Project
+
 An application that helps you learn a language by reading text — surfacing inline
 translation and linguistic context as you read.
 
 ## Goals
+
 <!-- Each active or drafting goal as a heading; achieved/superseded goals are
      historical and omitted. Under each goal, its open tasks with status inline
      (`in-review` = waiting on a human). Done tasks are excluded.
@@ -27,10 +29,9 @@ translation and linguistic context as you read.
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 - [[task-014_cap-new-word-intake]] — in-review
-- [[task-015_yle-selko-content-source]] — to-do
-
 
 ## Output locations
+
 <!-- Authored (not derived): a high-level map of where each KIND of output is
      saved for this project — not a list of individual files. The agent reads this
      to know where to save new outputs, and asks the human only when a kind isn't
@@ -50,10 +51,8 @@ translation and linguistic context as you read.
 - Docs → /docs
 - Decisions → [.project/decisions/](.project/decisions/)
 
-
 ## Notes
 
-- Remove characters like . or ! or anything else that not a letter before sending a word for translation
 - Need to check whether we can reduce the google oauth scope to single seet rather than having full `spreadsheets` scope.
 - UI need to be improved
 - There is TODO in here - src/app/api/sheets/verify/route.ts
