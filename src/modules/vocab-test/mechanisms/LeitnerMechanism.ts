@@ -4,7 +4,7 @@
 // swapped into service.ts in one line for comparison.
 
 import type { TestMechanism } from '../ports/TestMechanism';
-import type { Grade, KnowledgeItem, ReviewState, Status } from '../types';
+import { STAGE, type Grade, type KnowledgeItem, type ReviewState, type Status } from '../types';
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -17,7 +17,7 @@ export const DEFAULT_LEITNER_CONFIG: LeitnerConfig = {
   intervals: { New: 0, Learning: 2 * SECONDS_PER_DAY, Known: 7 * SECONDS_PER_DAY },
 };
 
-const ORDER: Status[] = ['New', 'Learning', 'Known'];
+const ORDER: Status[] = [STAGE.New, STAGE.Learning, STAGE.Known];
 
 function promote(status: Status): Status {
   const i = ORDER.indexOf(status);
@@ -27,11 +27,11 @@ function promote(status: Status): Status {
 // The app no longer stores Status (decision 004) — recover the Leitner box from the interval
 // this mechanism itself wrote (the per-box intervals are distinct). Unknown → Learning.
 function boxFromInterval(intervalSeconds: number | null, config: LeitnerConfig): Status {
-  if (intervalSeconds == null) return 'New';
+  if (intervalSeconds == null) return STAGE.New;
   const match = (Object.entries(config.intervals) as [Status, number][]).find(
     ([, secs]) => secs === intervalSeconds,
   );
-  return match ? match[0] : 'Learning';
+  return match ? match[0] : STAGE.Learning;
 }
 
 // Kept as an alternative mechanism while the test algorithm is being finalised; not wired into
@@ -48,16 +48,16 @@ export function createLeitnerMechanism(
       // demotes a struggled Known); Good steps up one box; Easy jumps to Known.
       switch (grade) {
         case 'again':
-          next = 'New';
+          next = STAGE.New;
           break;
         case 'hard':
-          next = 'Learning';
+          next = STAGE.Learning;
           break;
         case 'good':
           next = promote(current);
           break;
         case 'easy':
-          next = 'Known';
+          next = STAGE.Known;
           break;
       }
       return { lastTested: now.toISOString(), intervalSeconds: config.intervals[next] };

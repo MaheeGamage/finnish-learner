@@ -1,4 +1,4 @@
-import type { KnowledgeItem, Status } from './types';
+import { STAGE, type KnowledgeItem, type Status } from './types';
 
 // Seconds at/above which a word reads as Known. Mirrors the sheet's Status formula threshold
 // (21 days). In seconds so it lines up with the seconds-based Review Interval.
@@ -10,6 +10,6 @@ export function deriveStage(
   item: KnowledgeItem,
   knownThresholdSeconds: number = DEFAULT_KNOWN_THRESHOLD_SECONDS,
 ): Status {
-  if (!item.lastTested || item.intervalSeconds == null) return 'New';
-  return item.intervalSeconds >= knownThresholdSeconds ? 'Known' : 'Learning';
+  if (!item.lastTested || item.intervalSeconds == null) return STAGE.New;
+  return item.intervalSeconds >= knownThresholdSeconds ? STAGE.Known : STAGE.Learning;
 }

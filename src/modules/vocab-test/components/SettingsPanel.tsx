@@ -13,7 +13,7 @@ import {
   type ProfileName,
   type TuningConfig,
 } from '../settings';
-import type { Grade } from '../types';
+import { STAGE, type Grade } from '../types';
 
 // Profile chips shown in the segmented control. Custom is the state you land in by hand-editing.
 const PRESET_META: Record<PresetName, { label: string; blurb: string }> = {
@@ -53,7 +53,7 @@ function humanizeSeconds(s: number): string {
 // The sheet Status formula matched to the active threshold (whole days → N*86400, else raw seconds).
 function statusFormula(thresholdSeconds: number): string {
   const term = thresholdSeconds % DAY === 0 ? `${thresholdSeconds / DAY}*86400` : `${thresholdSeconds}`;
-  return `=ARRAYFORMULA(IF(A2:A="","",IF(G2:G="","New",IF((H2:H<>"")*(H2:H>=${term}),"Known","Learning"))))`;
+  return `=ARRAYFORMULA(IF(A2:A="","",IF(G2:G="","${STAGE.New}",IF((H2:H<>"")*(H2:H>=${term}),"${STAGE.Known}","${STAGE.Learning}"))))`;
 }
 
 const equal = (a: TuningConfig, b: TuningConfig) => JSON.stringify(a) === JSON.stringify(b);

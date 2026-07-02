@@ -1,8 +1,16 @@
 // Shared types for the knowledge-testing (quiz) feature.
 
 // User-facing learning stage. Derived in code (and by the sheet's Status formula) from the
-// interval — never stored/written by the app (decision 004).
-export type Status = 'New' | 'Learning' | 'Known';
+// interval — never stored/written by the app (decision 004). STAGE is the single source of
+// truth for the three values; the Status type is derived from it so both stay in sync. Every
+// reference to a stage (selector throttles, Leitner boxes, the sheet formula) points here.
+export const STAGE = {
+  New: 'New',
+  Learning: 'Learning',
+  Known: 'Known',
+} as const;
+
+export type Status = (typeof STAGE)[keyof typeof STAGE];
 
 // Self-graded reveal grades (Anki-style).
 export type Grade = 'again' | 'hard' | 'good' | 'easy';

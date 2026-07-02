@@ -1,5 +1,5 @@
 ---
-status: to-do    # to-do | in-progress | in-review | done
+status: in-review    # to-do | in-progress | in-review | done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -29,22 +29,32 @@ cap. Needs no schema change — the selector already receives every item. Prefer
 per-day new-card cap because the sheet stores no introduction date (`lastTested` + interval only),
 which makes a daily rate-limit awkward.
 
-## Open questions
-- [ ] **Approach:** total-Learning WIP cap · per-day new-card cap (needs an intro-date we don't
-      store) · a combination?
-- [ ] **Relationship to the existing `learningCapForNew` (due-based pressure):** complement it
-      (two pressures — due-learning *and* total-learning) or replace it?
-- [ ] **Throttle shape:** hard zero at the cap, or scale down smoothly like the current `pressure`
-      term?
-- [ ] **Cap value:** rough starting number (e.g. ~15–20 total Learning words)?
-- [ ] **User-configurable?** Expose on the **/settings** page with the other SRS tuning
-      ([[task-011_expose-srs-tuning-config]]), or keep it an internal `PriorityConfig` constant?
-- [ ] **Scope of "in flight":** Learning only (New and Known excluded) — confirm.
-- [ ] **Empty-session UX:** when total Learning ≥ cap and nothing is due, a quiz legitimately
-      returns 0 cards ("come back later"). Is that the desired message, or do we want a softer
-      "nothing due yet" state? (see [[task-013]] note on the empty-session path)
-- [ ] **Decision record?** "WIP cap vs daily new-cap" is a real, hard-to-cheaply-reverse fork —
-      graduate to a `decisions/` record once an approach is chosen?
+## Decisions (resolved 2026-07-02)
+- **Approach:** total-Learning WIP cap. No schema change — the selector already receives every
+  item. Per-day new-card cap rejected (sheet stores no introduction date).
+- **Relationship to `learningCapForNew`:** complement, not replace. Two pressures — due-Learning
+  *and* total-Learning WIP — combined via the stricter (smaller) wins: `pressure = min(due, wip)`.
+- **Throttle shape:** smooth scale-down, mirroring the existing `pressure` term:
+  `wipPressure = max(0, 1 - learningTotal / learningWipCap)`.
+- **Cap value:** internal `PriorityConfig` constant `learningWipCap`, default **20**. Exposing it
+  on **/settings** deferred to [[task-011_expose-srs-tuning-config]].
+- **Scope of "in flight":** Learning only — `deriveStage === 'Learning'` excludes New and Known.
+- **Empty-session UX:** the existing `empty` phase ("🎉 Nothing to review right now… check back
+  later") covers it; no new message needed.
+- **Decision record:** not graduated — the WIP-vs-daily fork was low-cost to reverse (one selector
+  file, no schema/data change), so it stays in this Log rather than `decisions/`.
+
+## Implementation
+- [x] Add `learningWipCap: number` to `PriorityConfig` (default 20).
+      → [PrioritySessionSelector.ts](../../src/modules/vocab-test/selectors/PrioritySessionSelector.ts)
+- [x] Count total Learning over **all** items (due or not); derive `wipPressure`; combine with the
+      existing due-based `duePressure` via `min`.
+- [x] Add a `newCeiling` that the **backfill** respects — the real fix: previously the backfill
+      re-padded an empty session with new words even when `newBudget` was 0. Now new backfill is
+      capped at `floor(size * pressure)`, so a full Learning set yields an empty session, not a
+      new-word pile-on. Reviews still backfill freely.
+- [x] Verified via a fixture harness across 4 scenarios (clean slate → 5 new; WIP full → 0 cards;
+      partial WIP → throttled; due backlog → reviews fill, 0 new). typecheck clean.
 
 ## Done when
 Rapid back-to-back quizzes can't keep introducing new words past the chosen cap; once the
@@ -55,3 +65,9 @@ rather than padding with new ones.
 - 2026-06-22: Drafted [human + ai]. Diagnosis captured: existing new-word throttle keys off *due*
   Learning words, so it doesn't fire during same-sitting back-to-back quizzes; leading fix is a
   total-Learning WIP cap. Left as open questions per [human] — to be worked later.
+- 2026-07-02: Open questions resolved [human]: total-Learning WIP cap, complement the existing
+  due-based pressure (stricter wins), smooth scale-down, internal constant `learningWipCap`=20.
+  Implemented in `PrioritySessionSelector` [ai]. Key finding while verifying: the WIP pressure
+  alone was insufficient — the **backfill** re-padded an empty session with new words. Added a
+  `newCeiling` the backfill honours; a full Learning set now yields an empty session (handled by
+  the existing `empty` phase). Verified across 4 fixture scenarios; typecheck clean. → in-review.
