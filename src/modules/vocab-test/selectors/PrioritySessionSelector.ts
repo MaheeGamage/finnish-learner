@@ -38,7 +38,7 @@ export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
   jitter: 0.5,
   knownThresholdSeconds: DEFAULT_KNOWN_THRESHOLD_SECONDS,
   learningCapForNew: 8,
-  learningWipCap: 20,
+  learningWipCap: 30,
 };
 
 const isNew = (item: KnowledgeItem) => !item.lastTested || item.intervalSeconds == null;
