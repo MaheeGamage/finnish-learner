@@ -1,5 +1,5 @@
 ---
-status: to-do    # to-do | in-progress | in-review | done
+status: done    # to-do | in-progress | in-review | done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -39,22 +39,23 @@ best-effort, not a guaranteed linguistic derivation.
   `MorphologyAnalyzer` port so a second language needs only a new adapter.
 
 **Plan — logic phase (buildable + testable without any UI):**
-- [ ] Spike Voikko `FSTOUTPUT` / `STRUCTURE` on sample words (`nukun`, `talossa`, `koirilla`,
-      `tulen`) to judge whether the raw transducer path gives reliable morpheme segmentation.
-      If cryptic, fall back to prefix-alignment of base ↔ surface.
-- [ ] Extend `MorphologyResult` with an optional `derivation: DerivationStep[] | null`
-      (existing `baseForm` / `formSummary` untouched, so graceful degradation is unchanged).
-- [ ] Build the derivation engine: align base ↔ surface, name added affixes from features,
-      detect KPT gradation via a gradation-pair table (`kk↔k`, `pp↔p`, `tt↔t`, `k↔∅`, `p↔v`,
-      `t↔d`, `nk↔ng`, `mp↔mm`, `nt↔nn`, …). Emit ordered steps + a confidence flag; low
-      confidence → `derivation: null`.
-- [ ] Unit-test the engine against a fixture set of known words so accuracy is measurable and
-      regressions are caught.
+- [x] Spike Voikko `FSTOUTPUT` on sample words → the raw path gives clean base/stem/ending
+      segmentation; gradation reconstructed by comparing base vs surface stem. (see Log)
+- [x] Extend `MorphologyResult` with `derivation: Derivation | null` (`Derivation = { summary,
+      steps[] }`); existing fields untouched, so graceful degradation is unchanged.
+- [x] Build the derivation engine (`deriveInflection.ts`, pure): parse FST → base/stem/ending,
+      name affixes from resolved feature labels, detect KPT gradation via a gradation-pair
+      table. Unexplained consonant change or failed reconstruction → `null` (degrade).
+- [x] Unit-test the engine (`deriveInflection.test.ts`, `node:test`) against real captured FST
+      fixtures — 13 tests, covers kk→k / nk→ng / k→∅, plural, possessive, and degrade cases.
 
 **Plan — visual phase (human designs, then AI wires):**
-- [ ] Human specifies the tooltip presentation: compact `base → surface` line with a
-      `[▸ steps]` expander, within the mobile viewport clamp.
-- [ ] AI wires the specified markup to the engine's `derivation` output.
+- [x] Human chose the presentation from a rendered mockup: **Variant B — stacked steps**
+      (one row per step: form + rule), **always visible** (no expander — the tooltip is
+      `pointer-events-none` / dismiss-on-mouseleave, so click-to-expand isn't viable without
+      reworking the interaction model). Colour code: amber = KPT gradation, indigo = ending.
+- [x] AI wired it into `TranslatableWord.tsx` reading from `derivation.steps`; degrades to the
+      previous one-line summary when `derivation` is null.
 
 ## Done when
 
@@ -63,7 +64,44 @@ expands to labeled steps (affixes + KPT gradation), e.g. `nukun → nukkua · kk
 When the engine can't build a confident derivation, the tooltip falls back to the current
 base-form + summary display with no regression.
 
+## Outputs
+
+- [deriveInflection.ts](../../src/modules/morphology/adapters/deriveInflection.ts) — pure
+  derivation engine (FST parse + KPT gradation + step assembly).
+- [deriveInflection.test.ts](../../src/modules/morphology/adapters/deriveInflection.test.ts) —
+  13 `node:test` unit tests over real captured FST fixtures.
+- [MorphologyAnalyzer.ts](../../src/modules/morphology/ports/MorphologyAnalyzer.ts) — port
+  extended with `Derivation` / `DerivationStep` + `MorphologyResult.derivation`.
+- [FinnishMorphologyAnalyzer.ts](../../src/modules/morphology/adapters/FinnishMorphologyAnalyzer.ts)
+  — wires resolved feature labels into the engine, populates `derivation`.
+- `package.json` `test` script + `tsconfig` `allowImportingTsExtensions` (dependency-free
+  Node-native TS test runner).
+- [TranslatableWord.tsx](../../src/modules/reader/components/TranslatableWord.tsx) — tooltip
+  renders the stacked-step derivation (Variant B), falling back to the one-line summary.
+
 ## Log
+- 2026-07-03: **Visual phase wired** [ai]. Human picked Variant B (stacked steps, always
+  visible) from a rendered mockup. `DerivationStep` refactored to `{ kind, marker, detail,
+  result }` so the tooltip styles the gradation token (amber) vs ending (indigo) without
+  string-parsing; 13 tests updated + passing, `tsc` + `eslint` clean. Dev server compiles and
+  serves (HTTP 200, no font blocker). **Not yet visually confirmed in a browser** — hover
+  rendering needs a real browser + Voikko WASM; left for the human to eyeball. Status →
+  in-review (awaiting human's visual check + promotion).
+- 2026-07-03: **Logic phase complete** [ai]. Engine built + wired + unit-tested (13 passing),
+  `tsc --noEmit` clean. Verified end-to-end through real Voikko: `nukun → nukkua · kk→k + -n`,
+  `kaupungissa → nk→ng + -ssa`, `luen → k→∅ + -n`, `taloissamme → -issamme (inessive pl +
+  poss.)` all correct; consonant-stem `käden`/`juoksee` and nested-derivation words degrade
+  gracefully. **Next: visual phase — human designs the tooltip presentation** (compact
+  `base → surface` line + `[▸ steps]` expander); AI then wires it. No UI changed yet.
+- 2026-07-03: Logic phase started [ai]. **FSTOUTPUT spike done** (ran voikko in Node with the
+  bundled dict — no network needed). Result: `FSTOUTPUT` gives exactly the segmentation we need.
+  For `nukun`: `[Lt][Xp]nukkua[X]nuku[Tt][Ap][P1][Ny][Ef]n` → base=`nukkua`, surface-stem=`nuku`
+  (gradation already applied), ending=`n`. So **gradation = compare base's stem-boundary
+  consonants vs the FST surface stem** (no guessing): `nukkua→nuku` kk→k, `kaupunki→kaupungi`
+  nk→ng, `lukea→lue` k→∅. Feature meaning still comes from the existing SIJAMUOTO/PERSON/TENSE
+  tables. Hard cases (consonant-stem `käsi→kä`+`den`, `juosta→juo`+`ksee`) surface cleanly as
+  low-confidence. Engine designed pure (plain-object input) → unit-testable in Node via built-in
+  `node:test` + native TS, no new deps.
 - 2026-07-03: Drafted [human + ai]. Enhancement to shipped task-016. Established that Voikko
   gives final features only — no derivation trace — so the step story is reconstructed from
   base + surface + features (best-effort, graceful degrade). Human decided: compact +

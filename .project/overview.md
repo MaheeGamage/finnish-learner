@@ -29,7 +29,6 @@ translation and linguistic context as you read.
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 - [[task-014_cap-new-word-intake]] — in-review
-- [[task-017_morphology-derivation-trace]] — to-do
 
 ## Output locations
 

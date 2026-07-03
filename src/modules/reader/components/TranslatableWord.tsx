@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { fetchRichTranslation, RichTranslation } from '@/modules/translation';
 import { hasTextSelection } from '../textUtils';
 import { saveVocab } from '@/modules/vocab-store';
@@ -406,8 +406,43 @@ export default function TranslatableWord({
                         </span>
                     )}
 
-                    {/* Morphology line — from Voikko; only when the word is inflected */}
-                    {morphology && morphology.formSummary && (
+                    {/* Morphology — from Voikko; only when the word is inflected.
+                        Preferred: step-by-step derivation (base → surface). Falls back to the
+                        one-line summary when the analyser can't build a confident chain. */}
+                    {morphology?.derivation ? (
+                        <span className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5
+                            mt-1 pt-1 border-t border-white/10 text-xs leading-snug">
+                            {morphology.derivation.steps.map((step, i) => (
+                                <Fragment key={i}>
+                                    <span
+                                        className={`font-mono ${
+                                            step.kind === 'base'
+                                                ? 'text-indigo-200'
+                                                : step.kind === 'gradation'
+                                                ? 'text-indigo-300'
+                                                : 'text-white font-semibold'
+                                        }`}
+                                    >
+                                        {step.result}
+                                    </span>
+                                    <span className="text-gray-400">
+                                        {step.marker && (
+                                            <span
+                                                className={`font-mono font-semibold ${
+                                                    step.kind === 'gradation'
+                                                        ? 'text-amber-400'
+                                                        : 'text-indigo-300'
+                                                }`}
+                                            >
+                                                {step.marker}{' '}
+                                            </span>
+                                        )}
+                                        {step.detail}
+                                    </span>
+                                </Fragment>
+                            ))}
+                        </span>
+                    ) : morphology?.formSummary ? (
                         <span className="block text-xs text-indigo-300 mt-0.5 leading-snug">
                             <span className="text-indigo-200 font-medium">{morphology.baseForm}</span>
                             {morphology.suffix && (
@@ -418,7 +453,7 @@ export default function TranslatableWord({
                                 <span className="text-indigo-300"> — {morphology.meaning}</span>
                             )}
                         </span>
-                    )}
+                    ) : null}
                 </span>
             )}
         </span>
