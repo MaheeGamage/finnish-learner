@@ -8,6 +8,7 @@ import {
   COMPARISON_LABEL,
   PARTICIPLE_LABEL,
 } from './finnishKnowledge';
+import { buildDerivation } from './deriveInflection';
 import type { Voikko } from '@yongsk0066/voikko';
 
 export class FinnishMorphologyAnalyzer implements MorphologyAnalyzer {
@@ -93,7 +94,24 @@ export class FinnishMorphologyAnalyzer implements MorphologyAnalyzer {
     const meaning = caseInfo?.meaning ?? null;
     const formSummary = parts.length > 0 ? parts.join(' · ') : null;
 
-    return { baseForm, wordClass, formSummary, suffix, meaning };
+    const derivation = buildDerivation({
+      baseForm: baseForm.toLowerCase(),
+      surfaceWord: clean.toLowerCase(),
+      fstOutput: a.FSTOUTPUT ?? null,
+      case: caseInfo ? { label: caseInfo.label, meaning: caseInfo.meaning } : null,
+      person: a.PERSON ? PERSON_LABEL[a.PERSON] ?? null : null,
+      tense: a.TENSE ? TENSE_LABEL[a.TENSE] ?? null : null,
+      mood: a.MOOD && a.MOOD !== 'indicative' ? MOOD_LABEL[a.MOOD] ?? null : null,
+      plural: a.NUMBER === 'plural',
+      participle: a.PARTICIPLE ? PARTICIPLE_LABEL[a.PARTICIPLE] ?? null : null,
+      comparison:
+        a.COMPARISON && a.COMPARISON !== 'positive'
+          ? COMPARISON_LABEL[a.COMPARISON] ?? null
+          : null,
+      possessive: a.POSSESSIVE ? `+${a.POSSESSIVE} possessive` : null,
+    });
+
+    return { baseForm, wordClass, formSummary, suffix, meaning, derivation };
   }
 
   terminate(): void {
