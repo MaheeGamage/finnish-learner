@@ -22,12 +22,6 @@ export interface PriorityConfig {
   // budget scales linearly from full (no backlog) down to 0 at this count, so a large
   // learning backlog crowds out new words. Must be > 0.
   learningCapForNew: number;
-  // Total-Learning WIP cap (task-014): the size of the entire Learning set — due *or not* —
-  // at which new-word intake is throttled to zero. Unlike learningCapForNew (which counts only
-  // *due* Learning words), this counts every word currently in the Learning stage, so it keeps
-  // firing during back-to-back sittings when just-graded words aren't due yet. The two throttles
-  // combine (the stricter one wins). Must be > 0.
-  learningWipCap: number;
 }
 
 export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
@@ -38,7 +32,6 @@ export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
   jitter: 0.5,
   knownThresholdSeconds: DEFAULT_KNOWN_THRESHOLD_SECONDS,
   learningCapForNew: 8,
-  learningWipCap: 30,
 };
 
 const isNew = (item: KnowledgeItem) => !item.lastTested || item.intervalSeconds == null;
@@ -77,42 +70,21 @@ export function createPrioritySessionSelector(
       const news = candidates.filter((c) => isNew(c.item));
       const reviews = candidates.filter((c) => !isNew(c.item));
 
-      // Adaptive new-word budget: start from the newRatio cap, then scale it down by two
-      // independent Learning pressures — the stricter (smaller) one wins. Focus on words already
-      // being learned before adding new ones.
-      //   (1) due-Learning backlog: overdue reviews crowd out new words this session.
-      //   (2) total-Learning WIP (task-014): the whole in-flight Learning set, due *or not*, so
-      //       back-to-back sittings can't keep pulling in new words after grading pushes their
-      //       due dates out. Counted over every item, not just this session's candidates.
+      // Adaptive new-word budget: start from the newRatio cap, then scale it down by the
+      // due-Learning backlog (focus on words being learned before adding new ones). Hits 0
+      // once due-Learning ≥ learningCapForNew.
       const learningDue = reviews.filter(
         (c) => deriveStage(c.item, config.knownThresholdSeconds) === STAGE.Learning,
       ).length;
-      const learningTotal = items.filter(
-        (item) => deriveStage(item, config.knownThresholdSeconds) === STAGE.Learning,
-      ).length;
-      const duePressure = Math.max(0, 1 - learningDue / config.learningCapForNew);
-      const wipPressure = Math.max(0, 1 - learningTotal / config.learningWipCap);
-      const pressure = Math.min(duePressure, wipPressure);
+      const pressure = Math.max(0, 1 - learningDue / config.learningCapForNew);
       const newBudget = Math.min(news.length, Math.floor(size * config.newRatio * pressure));
-      // Hard ceiling on how many new words may enter this session *including backfill*. Scales
-      // with the same pressure, so when the Learning set is full (pressure → 0) the backfill can
-      // no longer pad an otherwise-empty session with new words — it returns fewer cards (or
-      // none) instead, per task-014. Always ≥ newBudget since newRatio ≤ 1.
-      const newCeiling = Math.floor(size * pressure);
-      // Remaining slots go to reviews; the backfill below tops up if short — freely with reviews
-      // (always due), but with new words only up to newCeiling.
+      // Remaining slots go to reviews; the backfill below tops up from any pool if short.
       const picked = [...news.slice(0, newBudget), ...reviews.slice(0, size - newBudget)];
       if (picked.length < size) {
         const used = new Set(picked.map((c) => c.item.rowNumber));
-        let newsPicked = picked.filter((c) => isNew(c.item)).length;
         for (const c of candidates) {
           if (picked.length >= size) break;
-          if (used.has(c.item.rowNumber)) continue;
-          if (isNew(c.item)) {
-            if (newsPicked >= newCeiling) continue;
-            newsPicked++;
-          }
-          picked.push(c);
+          if (!used.has(c.item.rowNumber)) picked.push(c);
         }
       }
 
