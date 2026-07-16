@@ -1,8 +1,17 @@
 ---
-status: in-review    # to-do | in-progress | in-review | done
+status: reverted    # to-do | in-progress | in-review | done | reverted
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
+
+> **REVERTED 2026-07-16.** The total-Learning WIP cap was backed out of
+> [PrioritySessionSelector.ts](../../src/modules/vocab-test/selectors/PrioritySessionSelector.ts)
+> — the selector is restored to the earlier due-Learning-only throttle (`learningCapForNew`).
+> **Reason:** on a large pre-existing deck the cap made the app look finished. Reproduced: with
+> ~30 words in the Learning stage (none currently due) and hundreds of never-reviewed New words,
+> the session returned **empty** ("nothing to learn") because `wipPressure → 0` zeroed both the
+> new budget *and* the backfill ceiling. The intent (stop back-to-back over-introduction) is
+> still valid — it needs a better mechanism (see [[002-build-v2-mvp]] notes). Do not re-apply as-is.
 
 ## Description
 Stop back-to-back quizzes from over-introducing new words and burying the user under a
@@ -71,3 +80,11 @@ rather than padding with new ones.
   alone was insufficient — the **backfill** re-padded an empty session with new words. Added a
   `newCeiling` the backfill honours; a full Learning set now yields an empty session (handled by
   the existing `empty` phase). Verified across 4 fixture scenarios; typecheck clean. → in-review.
+- 2026-07-16: **Reverted** [human + ai]. A user with ~800 word pairs hit "no words to learn"
+  after reviewing only part of the deck; the un-asked words had no Last Tested / Review Interval.
+  Reproduced against the real selector: 30 Learning (not due) + 770 New → empty session (the WIP
+  cap zeroed new intake *and* the backfill ceiling). The `learningWipCap` field, `wipPressure`,
+  `newCeiling`, and the new-word-limited backfill were removed from `PrioritySessionSelector`;
+  restored to the due-Learning-only `pressure`. The `STAGE.Learning` enum cleanup from the same
+  commit was kept (unrelated). `tsc` clean, 13 tests pass, repro now returns a non-empty session.
+  Intent still valid — needs a mechanism that doesn't strand a large New backlog. → reverted.
