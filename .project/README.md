@@ -39,6 +39,11 @@ scaffold the whole project at once.
 
 ## Conventions
 
+- **Readable over complete** — human-facing sections (`Description`, `Goal`,
+  `Success criteria`, `Context`) are bullets/fixed-fields/diagrams, not prose
+  essays; skim-in-10-seconds is the bar. `Log` is the exception — it's the AI's
+  free-form working trail, not optimised for human reading, so no brevity rule
+  applies there.
 - **Naming** — goals and decisions are numbered + slugged (`001-knowledge-search.md`);
   tasks are numbered with a `task-` prefix and underscore (`task-001_survey-existing-tools.md`).
   Titles come from filenames.
