@@ -87,11 +87,11 @@ cp .env.local.example .env.local
 | `AUTH_GOOGLE_SECRET` | ✅ | OAuth **Client secret** from step 4 |
 | `AUTH_URL` | ✅ | The exact URL you open the app at. Must match the redirect URI's base. |
 | `AUTH_SECRET` | ✅ | NextAuth session secret from step 5 |
-| `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` | optional | `false`/`0`/`no`/`off` disables saving new vocab rows (default on). Client-side gate. |
-| `VOCAB_SAVING_ENABLED` | optional | Server-side override; falls back to `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` if unset. |
+| `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` | optional | `false`/`0`/`no`/`off` disables saving new vocab rows (default on). Governs both client and server. |
 
-The two saving flags let you read without writing to the sheet — see
-[vocabSavingFlag.ts](../src/modules/vocab-store/vocabSavingFlag.ts).
+This flag lets you read without writing to the sheet — checked directly via `config.VOCAB_SAVING_ENABLED`
+in [saveVocab.ts](../src/modules/vocab-store/saveVocab.ts) (client) and
+[api/vocab/route.ts](../src/app/api/vocab/route.ts) (server).
 
 ## 7. Prepare your vocabulary Google Sheet
 
@@ -181,5 +181,5 @@ permanent fix is tracked in
 | `redirect_uri_mismatch` at sign-in | `AUTH_URL` ≠ the registered redirect URI (port/scheme/host). |
 | `access_denied` / can't sign in | Your account isn't added as a **test user** (step 3). |
 | Sign-in works but saves fail | Google Sheets API not enabled (step 2), or token expired (~1h). |
-| Saves silently do nothing | `VOCAB_SAVING_ENABLED` / `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` set to off. |
+| Saves silently do nothing | `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` set to off. |
 | `Not authenticated` from `/api/...` | No active session — sign in first. |
