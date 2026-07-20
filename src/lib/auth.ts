@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import { config } from "@/config/config.server";
 
 // Fallback: full spreadsheets scope. Swap to drive.file + Google Picker
 // when implementing the Sheets adapter (avoids Google app-verification).
@@ -50,8 +51,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
-            client_id: process.env.AUTH_GOOGLE_ID!,
-            client_secret: process.env.AUTH_GOOGLE_SECRET!,
+            client_id: config.AUTH_GOOGLE_ID,
+            client_secret: config.AUTH_GOOGLE_SECRET,
             grant_type: "refresh_token",
             refresh_token: token.refreshToken,
           }),
