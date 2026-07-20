@@ -56,6 +56,7 @@ translation and linguistic context as you read.
 
 ## Notes
 
+- Tooltip word-class badge (`[verb]`/`[noun]`) comes from Wiktionary `partOfSpeech`, which is often null — could fall back to Voikko `wordClass` (already computed). Deferred from [[task-017_morphology-derivation-trace]].
 - Need to check whether we can reduce the google oauth scope to single seet rather than having full `spreadsheets` scope.
 - UI need to be improved
 - There is TODO in here - src/app/api/sheets/verify/route.ts
