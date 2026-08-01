@@ -1,8 +1,11 @@
 ---
-status: to-do    # to-do | in-progress | in-review | done
+status: in-progress    # to-do | in-progress | in-review | done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
+
+## Human note
+Check my latest log entry
 
 ## Description
 
@@ -81,6 +84,22 @@ Swapping localStorage for a Sheet/DB store means writing one new adapter — no 
 code and no call site changes.
 
 ## Log
+- 2026-07-26: Started implementation; settled the open forks with the human [human + ai]. The human
+  reframed the task as their broader goal — *one centralized config layer where every module reads a
+  value from a single place and the source (hardcoded / env / user setting / later DB/Sheet) is
+  hidden*. Reconciled against the existing split: chose **uniform access convention, sources stay
+  split** — app config ([[task-019_centralized-app-config]], `config.server.ts`/`config.client.ts`)
+  is untouched and user settings adopts the same declare-once/read-through-a-facade shape; the two
+  share the convention, not a store. The **one accepted exception** to "a single place" is the FE/BE
+  file split (Next.js server/client boundary forbids one shared module — secrets would leak into the
+  client bundle); the human explicitly okayed this. **Confirmed the persistence fork:** async
+  `SettingsStore` port + in-memory sync cache (over sync-only), re-affirming the 2026-07-20 decision
+  now that the whole design was reopened. **Placement:** new infra lives in `src/config/settings/`,
+  beside the app-config facade under one `config/` roof. **`VOCAB_SAVING_ENABLED` stays in
+  `config.*`** — it's a build-time deployment flag, not a per-device user setting (noted a future
+  scope option: if saving ever becomes a user-facing per-device toggle it would migrate here).
+  Full approved plan is external to this file; build order: port+adapter+facade+tests → migrate
+  translation (simplest) → migrate vocab-test + vocab-store → generic controls → generated page.
 - 2026-07-20: Persistence must stay swappable [human + ai]. Human: the store has to be replaceable
   by a DB/Sheet later — "keep the separation properly". Reshaped the generic helper into a
   `SettingsStore` **port** with a localStorage adapter, matching the module pattern already used
@@ -115,3 +134,38 @@ code and no call site changes.
   concept. Leading idea: a per-module settings registry + generic persistence, with a `uiVisible`
   flag per setting so anything can be exposed later without rework. Open question for
   implementation: keep bespoke panels for the two existing complex UIs, or go fully generic.
+- 2026-08-01: Current implementation seems too complecated and not achieving centralization I was looking for. So I revert the changes done by AI. And I present AppConfig method (check below). (AppClientConfig and AppServerConfig). No need to adopt all the things as it is. But just main concept that usage of app config. Can get the localstorage config manually without zustland
+
+```
+// store/appConfig.ts
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { env } from "@/lib/env"; // low-level, not imported anywhere else on the FE
+
+type AppConfig = {
+  apiBaseUrl: string;                    // env/hardcoded only, never overridden
+  sortOrder: "asc" | "desc" | "relevance"; // env default, user-overridable
+  setSortOrder: (v: AppConfig["sortOrder"]) => void;
+  resetSortOrder: () => void;
+};
+
+export const useAppConfig = create<AppConfig>()(
+  persist(
+    (set) => ({
+      apiBaseUrl: env.NEXT_PUBLIC_API_BASE_URL,
+      sortOrder: env.NEXT_PUBLIC_DEFAULT_SORT_ORDER,
+      setSortOrder: (v) => set({ sortOrder: v }),
+      resetSortOrder: () => set({ sortOrder: env.NEXT_PUBLIC_DEFAULT_SORT_ORDER }),
+    }),
+    {
+      name: "app-config",
+      storage: createJSONStorage(() => localStorage),
+      skipHydration: true,
+      partialize: (state) => ({ sortOrder: state.sortOrder }), // only persist overridable keys — apiBaseUrl should always reflect live env, never a stale cached copy
+    }
+  )
+);
+```
+```
+const { sortOrder, apiBaseUrl, setSortOrder } = useAppConfig();
+```
