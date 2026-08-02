@@ -75,20 +75,21 @@ to the relevant module, not deciding a fetch strategy at the call site. No behav
 config is valid.
 
 ## Outputs
-- [config.server.ts](../../src/config/config.server.ts) — server-only facade, keys named after the
-  env var they represent (`config.AUTH_GOOGLE_ID`, `config.AUTH_GOOGLE_SECRET`,
-  `config.VOCAB_SAVING_ENABLED`); plain object, resolved eagerly at import (fail-fast at startup).
-- [config.client.ts](../../src/config/config.client.ts) — client-safe facade (`config.VOCAB_SAVING_ENABLED`
-  from `NEXT_PUBLIC_*`); literal env member-expressions only, per Next.js's build-time inlining rule.
+- [config.server.ts](../../src/config/config.server.ts) — server-only facade, exported as
+  `serverConfig` with camelCase keys (`serverConfig.authGoogleId`, `serverConfig.authGoogleSecret`,
+  `serverConfig.vocabSavingEnabled`); plain object, resolved eagerly at import (fail-fast at startup).
+- [config.client.ts](../../src/config/config.client.ts) — client-safe facade
+  (`clientConfig.vocabSavingEnabled` from `NEXT_PUBLIC_*`); literal env member-expressions only, per
+  Next.js's build-time inlining rule.
 - [env.ts](../../src/config/env.ts) — `requireEnv`/`optionalEnv`, server-only dynamic env helpers.
 - [booleanEnv.ts](../../src/config/booleanEnv.ts) — `parseBooleanEnv`, pure, shared by both sides.
 - [env.test.ts](../../src/config/env.test.ts), [booleanEnv.test.ts](../../src/config/booleanEnv.test.ts),
   [config.server.test.ts](../../src/config/config.server.test.ts) — 10 `node:test` unit tests.
-- [lib/auth.ts](../../src/lib/auth.ts) — reads `config.AUTH_GOOGLE_ID`/`config.AUTH_GOOGLE_SECRET`
-  instead of `process.env.X!`.
+- [lib/auth.ts](../../src/lib/auth.ts) — reads
+  `serverConfig.authGoogleId`/`serverConfig.authGoogleSecret` instead of `process.env.X!`.
 - [saveVocab.ts](../../src/modules/vocab-store/saveVocab.ts) /
-  [api/vocab/route.ts](../../src/app/api/vocab/route.ts) — read `config.VOCAB_SAVING_ENABLED`
-  directly from `config.client`/`config.server` respectively; the intermediate
+  [api/vocab/route.ts](../../src/app/api/vocab/route.ts) — read `.vocabSavingEnabled`
+  directly from `clientConfig`/`serverConfig` respectively; the intermediate
   `vocabSavingFlag.client.ts`/`.server.ts` wrapper files were removed once the flag simplified to
   a passthrough (see Log) — the config facade itself already provides the "swap the source later"
   indirection, so a second wrapper achieved nothing beyond a different function name.
@@ -153,3 +154,22 @@ config is valid.
   since each caller still only ever imports the config module matching its own side. Updated the
   doc reference in `docs/setup-guide.md` that pointed at the now-deleted files. Re-verified:
   23/23 tests, `tsc --noEmit` clean, targeted `eslint` clean. Still in-review.
+- 2026-08-02: Renamed both facades' export and keys [human + ai]. `config` →
+  `clientConfig`/`serverConfig`, and the env-var-shaped keys → camelCase
+  (`serverConfig.authGoogleId`, `clientConfig.vocabSavingEnabled`). **Partially reverses the
+  2026-07-18 "keyed by the env var name itself" decision above** — only the casing; the eager
+  plain-object part of that decision stands untouched. Two reasons. **(1)** Distinct export names
+  put the side at the *call site*, not just the import line — worth something on exactly the pair of
+  modules this task already split files over once, when `saveVocab.ts` was pulling `config.server.ts`
+  into the client bundle graph next to OAuth secrets. **(2)** SCREAMING_CASE keys advertise "I am an
+  env var", which contradicts the facade's whole stated point that callers never learn where a value
+  comes from — and would read as a lie the day an entry becomes a constant or a DB row. Cost
+  identified and accepted: a key no longer greps straight through to `.env.local.example` and the
+  `docs/setup-guide.md` env table; that's now two lookups. **Rejected PascalCase** (`ServerConfig`,
+  the first cut of this change): in TS that casing means a type/class/component, so a const wearing
+  it reads as a type at every call site and takes the name you'd want for
+  `type ClientConfig = typeof clientConfig` — note `WiktApiClientConfig` is already a PascalCase
+  interface in this repo. Env var names themselves are unchanged, so `README.md` and
+  `.env.local.example` needed no edit; updated the one prose reference in `docs/setup-guide.md`.
+  Re-verified: 23/23 tests, `tsc --noEmit` clean, targeted `eslint` clean on all six changed files.
+  Still in-review.

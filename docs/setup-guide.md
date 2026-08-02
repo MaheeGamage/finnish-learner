@@ -89,9 +89,9 @@ cp .env.local.example .env.local
 | `AUTH_SECRET` | ✅ | NextAuth session secret from step 5 |
 | `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` | optional | `false`/`0`/`no`/`off` disables saving new vocab rows (default on). Governs both client and server. |
 
-This flag lets you read without writing to the sheet — checked directly via `config.VOCAB_SAVING_ENABLED`
-in [saveVocab.ts](../src/modules/vocab-store/saveVocab.ts) (client) and
-[api/vocab/route.ts](../src/app/api/vocab/route.ts) (server).
+This flag lets you read without writing to the sheet — checked directly via
+`clientConfig.vocabSavingEnabled` in [saveVocab.ts](../src/modules/vocab-store/saveVocab.ts) (client)
+and `serverConfig.vocabSavingEnabled` in [api/vocab/route.ts](../src/app/api/vocab/route.ts) (server).
 
 ## 7. Prepare your vocabulary Google Sheet
 

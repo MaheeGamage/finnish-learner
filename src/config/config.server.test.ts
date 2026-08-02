@@ -19,22 +19,22 @@ test('resolves entries once required vars are set', async () => {
   process.env.AUTH_GOOGLE_SECRET = 'test-secret';
   delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
 
-  const { config } = await importFresh();
-  assert.equal(config.AUTH_GOOGLE_ID, 'test-id');
-  assert.equal(config.AUTH_GOOGLE_SECRET, 'test-secret');
-  assert.equal(config.VOCAB_SAVING_ENABLED, true);
+  const { serverConfig } = await importFresh();
+  assert.equal(serverConfig.authGoogleId, 'test-id');
+  assert.equal(serverConfig.authGoogleSecret, 'test-secret');
+  assert.equal(serverConfig.vocabSavingEnabled, true);
 
   delete process.env.AUTH_GOOGLE_ID;
   delete process.env.AUTH_GOOGLE_SECRET;
 });
 
-test('VOCAB_SAVING_ENABLED follows NEXT_PUBLIC_VOCAB_SAVING_ENABLED', async () => {
+test('vocabSavingEnabled follows NEXT_PUBLIC_VOCAB_SAVING_ENABLED', async () => {
   process.env.AUTH_GOOGLE_ID = 'test-id';
   process.env.AUTH_GOOGLE_SECRET = 'test-secret';
   process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED = 'false';
 
-  const { config } = await importFresh();
-  assert.equal(config.VOCAB_SAVING_ENABLED, false);
+  const { serverConfig } = await importFresh();
+  assert.equal(serverConfig.vocabSavingEnabled, false);
 
   delete process.env.AUTH_GOOGLE_ID;
   delete process.env.AUTH_GOOGLE_SECRET;

@@ -4,9 +4,6 @@ owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
 
-## Human note
-Check my latest log entry
-
 ## Description
 
 - **Problem:** personalizable choices get buried in code. A value that suits one reader
@@ -137,35 +134,31 @@ code and no call site changes.
 - 2026-08-01: Current implementation seems too complecated and not achieving centralization I was looking for. So I revert the changes done by AI. And I present AppConfig method (check below). (AppClientConfig and AppServerConfig). No need to adopt all the things as it is. But just main concept that usage of app config. Can get the localstorage config manually without zustland
 
 ```
-// store/appConfig.ts
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { env } from "@/lib/env"; // low-level, not imported anywhere else on the FE
+type SortOrder = "asc" | "desc" | "relevance";
 
-type AppConfig = {
-  apiBaseUrl: string;                    // env/hardcoded only, never overridden
-  sortOrder: "asc" | "desc" | "relevance"; // env default, user-overridable
-  setSortOrder: (v: AppConfig["sortOrder"]) => void;
-  resetSortOrder: () => void;
+interface AppClientConfig {
+  apiBaseUrl: string;
+  defaultSortOrder: SortOrder;
+}
+
+export const config: AppConfig = {
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000",
+  defaultSortOrder: "asc"
 };
-
-export const useAppConfig = create<AppConfig>()(
-  persist(
-    (set) => ({
-      apiBaseUrl: env.NEXT_PUBLIC_API_BASE_URL,
-      sortOrder: env.NEXT_PUBLIC_DEFAULT_SORT_ORDER,
-      setSortOrder: (v) => set({ sortOrder: v }),
-      resetSortOrder: () => set({ sortOrder: env.NEXT_PUBLIC_DEFAULT_SORT_ORDER }),
-    }),
-    {
-      name: "app-config",
-      storage: createJSONStorage(() => localStorage),
-      skipHydration: true,
-      partialize: (state) => ({ sortOrder: state.sortOrder }), // only persist overridable keys — apiBaseUrl should always reflect live env, never a stale cached copy
-    }
-  )
-);
 ```
 ```
 const { sortOrder, apiBaseUrl, setSortOrder } = useAppConfig();
 ```
+
+- 2026-08-02: Aligned [[task-019_centralized-app-config]]'s naming with the AppConfig sketch above
+  [human + ai]. Renamed the app-config facades to `clientConfig`/`serverConfig` with camelCase keys
+  (`clientConfig.vocabSavingEnabled`, `serverConfig.authGoogleId`) — details and the trade-offs in
+  task-019's log. Relevant here because the 2026-08-01 sketch is the naming this task will follow,
+  and app config was still on the old env-var-shaped keys: the two are now consistent on **camelCase
+  properties** and on **a name that says which side you're on**. Two deliberate departures from the
+  sketch as written, both cosmetic: (1) `clientConfig`/`serverConfig` rather than
+  `AppClientConfig`/`AppServerConfig` as *value* names — PascalCase in TS reads as a type, and
+  leaving it free means `AppClientConfig` stays available as the interface name when this task
+  declares one, exactly as the sketch has it; (2) the `App` prefix dropped from the value since the
+  module path (`@/config/config.client`) already says it. Nothing about the settings design changes
+  — this only removes a naming inconsistency the migration would otherwise have inherited.

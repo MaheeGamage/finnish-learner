@@ -8,8 +8,8 @@ import { parseBooleanEnv } from './booleanEnv.ts';
 // startup) rather than only when some later code path happens to read it.
 //
 // Never import this from a client component — see config.client.ts for the client-safe side.
-export const config = {
-  AUTH_GOOGLE_ID: requireEnv('AUTH_GOOGLE_ID'),
-  AUTH_GOOGLE_SECRET: requireEnv('AUTH_GOOGLE_SECRET'),
-  VOCAB_SAVING_ENABLED: parseBooleanEnv(process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED, true),
+export const serverConfig = {
+  authGoogleId: requireEnv('AUTH_GOOGLE_ID'),
+  authGoogleSecret: requireEnv('AUTH_GOOGLE_SECRET'),
+  vocabSavingEnabled: parseBooleanEnv(process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED, true),
 };
