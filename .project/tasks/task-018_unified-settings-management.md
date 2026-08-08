@@ -26,51 +26,105 @@ goal: "[[002-build-v2-mvp]]"
 
 ```mermaid
 flowchart LR
-  M["Module settings.ts<br/>key · default · parse · ui?"] --> P[SettingsStore port]
-  P --> LS[(localStorage adapter)]
-  P -. later .-> ALT[(Sheet / DB / …)]
-  M -- "entries with ui" --> UI[/Settings page — rendered/]
-  M -. "escape hatch: custom component" .-> UI
+  ENV["env · NEXT_PUBLIC_*<br/>(only if set)"] --> R{{"resolve()<br/>deep merge, env wins"}}
+  LS[("localStorage<br/>app_config blob")] --> R
+  API[("/api/config")] -. later .-> R
+  DEF[DEFAULTS] --> R
+  R --> S["config.client.ts<br/>Zustand store"]
+  S --> G["ConfigGate<br/>holds render until ready"]
+  G --> A["useClientConfig · getClientConfig<br/>(both sync)"]
+  S -- setUserOverride --> LS
+  S -. "later phase: entries with ui" .-> UI[/Settings page — generated/]
 ```
 
-- **Approach (sketch — refine in Log):**
-  - One declaration per setting: `key`, `default`, `parse`, and an optional
-    `ui: { label, description, control }`. **Presence of `ui` is what makes it user-facing** —
-    no separate `uiVisible` flag, no registration call. Omit `ui` → code-only.
-  - Persistence sits behind a **`SettingsStore` port** (load/save/clear + parse-or-default),
-    with a localStorage adapter as the only implementation for now — a Sheet- or DB-backed one
-    must be a drop-in later. Follows the existing
-    [VocabRepository](../../src/modules/vocab-store/ports/VocabRepository.ts) pattern, **including
-    its async signature**: that port returns Promises even though
-    [its localStorage adapter](../../src/modules/vocab-store/adapters/LocalStorageVocabRepository.ts)
-    is synchronous, precisely so a remote adapter can drop in without touching call sites. A sync
-    port here would make the separation nominal only.
-  - Async has a cost to settle in implementation: a few call sites read settings synchronously
-    (`tuningHeader()` in [vocab-test/client.ts](../../src/modules/vocab-test/client.ts),
-    [richTranslationService.ts](../../src/modules/translation/services/richTranslationService.ts)).
-    Likely answer: hydrate an in-memory cache once at startup so reads stay sync while
-    load/save/clear go through the async port — decide during implementation.
-  - Settings page iterates the declarations and renders each group as a section. Generic controls
-    are the default path; a group may supply its own component as an **escape hatch** where a
-    generic control can't express it (drag-reorder source list, SRS preset picker).
-  - Modules keep owning their value types and validators — the helper is generic over them.
-- **Constraints:** localStorage is the only adapter shipped now — but behind the port, not assumed
-  by callers (no direct `localStorage` outside the adapter); must not regress
+- **Approach — layered config store (Zustand).** Sample this follows:
+  [sample-store-implementation.ts](task-018/sample-store-implementation.ts).
+  - [config.client.ts](../../src/config/config.client.ts) is the single **facade**. **Providers**
+    each supply a `DeepPartial<ClientConfig>`; the store deep-merges them by precedence into one
+    resolved config. A consumer reads a value and never learns its source (constant / env /
+    localStorage / backend later).
+  - **Precedence `env > localStorage > DEFAULTS`** — env is a deployment override, so a kill-switch
+    like `vocabSavingEnabled` beats a user preference. The env provider therefore contributes a key
+    **only when the variable is actually set**; otherwise its own fallback would permanently mask
+    every user override.
+  - Accessors, both **sync**: `useClientConfig(selector)` (React, `useShallow`) and
+    `getClientConfig()` (everywhere else), plus `setUserOverride(partial)` to write.
+  - **`ConfigGate` resolves config once at the root and holds page content until it's ready** — which
+    is what settles the sync-read cost noted on 2026-07-20: no consumer needs an async read or a
+    ready-check. Cost accepted: the gate's placeholder is what gets server-rendered, so page content
+    appears after hydration (the chrome stays outside the gate and still SSRs).
+  - **Async-ready by construction:** `init()` awaits all providers, so a `/api/config` provider drops
+    in later with no call-site change. Writes stay localStorage-only until a BE contract exists.
+    **Revisit the gate then** — blocking the whole app on a network fetch degrades far worse than
+    letting defaults render and swapping values in.
+  - Persistence: one versioned `app_config` blob. Each group's stored value is validated by **its
+    owning module's existing parser** (`parseTuning`, `parseSourceOrder`) before merging — an
+    invalid group is dropped and defaults win.
+  - Settings page still to be **generated** from the declarations — a later phase of this task; the
+    store is its prerequisite.
+  - Modules keep owning their value types and validators — the store is generic over them.
+- **Constraints:** no direct `localStorage` outside the config store's providers; must not regress
   [[task-011_expose-srs-tuning-config]] (SRS tuning) or
   [[task-013_configurable-translation-source-order]] (translation source order) — both ship
   working UI today; imports need explicit `.ts` extensions (Node's test runner rejects the
   extensionless form — see [[task-019_centralized-app-config]] Log).
 
 ## Plan
-- [ ] Inventory the three groups + the control kinds they need (number, enum/preset, ordered
-      list, text), and note near-future candidates (quiz session mechanics, reader preferences)
-- [ ] Design the declaration shape + the `SettingsStore` port (async, per VocabRepository)
-- [ ] Settle sync-read call sites (in-memory cache hydrated at startup, or make them async)
-- [ ] Decide which control kinds are worth generic components vs. left to the escape hatch
-- [ ] Migrate the three groups onto it (no behaviour change)
-- [ ] Make the settings page render from the declarations
-- [ ] Verify: `node:test` units for the port's parse/default paths against an in-memory fake
-      adapter (proves the seam holds without a browser); manual browser check for the panel UIs
+
+Pass 1 — build the store, migrate SRS tuning only:
+- [x] Record the chosen design in this file (Approach above + Log entry below)
+- [x] Add `zustand`; extract pure `deepMerge` + `DeepPartial` into `src/config/deepMerge.ts`
+- [x] Rewrite `config.client.ts`: `ClientConfig` tree, `DEFAULTS`, env + localStorage providers,
+      `resolve()`, the store, and the four accessors
+- [x] Persist a versioned `app_config` blob; non-destructive fallback read of the legacy
+      `finnish_srs_tuning` key (old key left in place, not deleted)
+- [x] `ConfigGate` client component: resolves config in a mount effect and holds page content until
+      ready, wrapping `{children}` in [layout.tsx](../../src/app/layout.tsx)
+- [x] Migrate SRS tuning: drop load/save/clear from
+      [vocab-test/settings.ts](../../src/modules/vocab-test/settings.ts), repoint
+      [client.ts](../../src/modules/vocab-test/client.ts),
+      [SettingsPanel.tsx](../../src/modules/vocab-test/components/SettingsPanel.tsx), and
+      [saveVocab.ts](../../src/modules/vocab-store/saveVocab.ts)'s config read
+- [x] Verify: 45/45 `node:test` (22 new), `tsc --noEmit` + eslint clean, dev server renders
+      `/settings` with no console/SSR errors
+- [ ] **Human check in a browser** — the parts a Node test can't reach: edit → Save → reload
+      persists; quiz request carries `x-srs-tuning` with the edited values; no hydration warning
+
+Later passes:
+- [ ] Migrate translation source order + vocab sheet ID onto the store
+- [ ] Generate the Settings page from the declarations (needs `ui` metadata on each entry)
+
+## Outputs
+
+- [config.client.ts](../../src/config/config.client.ts) — the facade. `ClientConfig` tree
+  (`vocabTest.srsTuning`, `vocabStore.savingEnabled`), `DEFAULTS`, the `env` + `localStorage`
+  providers, `resolve()`, the Zustand store, and four accessors: `useClientConfig(selector)`,
+  `getClientConfig()`, `setUserOverride()` — the first two both sync, per `ConfigGate` below.
+- [deepMerge.ts](../../src/config/deepMerge.ts) — pure `deepMerge` + `DeepPartial` + `isPlainObject`.
+  Arrays replace rather than merge; `undefined` never clobbers a lower layer.
+- [ConfigGate.tsx](../../src/config/ConfigGate.tsx) — wraps `{children}` in
+  [layout.tsx](../../src/app/layout.tsx): resolves config in a mount effect and renders a blank
+  placeholder while `status === 'pending'`. Not named `ConfigProvider` because "provider" already
+  means a config *source* here.
+- [deepMerge.test.ts](../../src/config/deepMerge.test.ts) (6) +
+  [config.client.test.ts](../../src/config/config.client.test.ts) (16) — 22 new `node:test` units;
+  45/45 total. Cover precedence, the env-provider-stays-silent-when-unset invariant, rejection of
+  invalid/unversioned/unparseable stored blobs, the legacy-key fallback and that it's left in place,
+  `setUserOverride` round-trip, the `pending → ready` transition the gate depends on, concurrent
+  `init()`, and the server-side path.
+- [vocab-test/settings.ts](../../src/modules/vocab-test/settings.ts) — `STORAGE_KEY`, `loadTuning`,
+  `saveTuning`, `clearTuning` removed (`clearTuning` had no callers). Still owns the shape, presets,
+  defaults and validators; now fully isomorphic.
+- [vocab-test/client.ts](../../src/modules/vocab-test/client.ts) — `tuningHeader()` reads
+  `getClientConfig().vocabTest.srsTuning`; stays sync, since the gate guarantees resolution.
+- [SettingsPanel.tsx](../../src/modules/vocab-test/components/SettingsPanel.tsx) — reads `saved` via
+  `useClientConfig`, writes via `setUserOverride`; the `loadTuning()` mount effect and the local
+  `saved` state are gone.
+- [saveVocab.ts](../../src/modules/vocab-store/saveVocab.ts) — reads
+  `getClientConfig().vocabStore.savingEnabled`; sync, guaranteed resolved by the gate.
+- [docs/setup-guide.md](../../docs/setup-guide.md) — the `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` note
+  pointed at the deleted `clientConfig` export.
+- `package.json` — `zustand@^5.0.14`.
 
 ## Done when
 
@@ -162,3 +216,91 @@ const { sortOrder, apiBaseUrl, setSortOrder } = useAppConfig();
   declares one, exactly as the sketch has it; (2) the `App` prefix dropped from the value since the
   module path (`@/config/config.client`) already says it. Nothing about the settings design changes
   — this only removes a naming inconsistency the migration would otherwise have inherited.
+- 2026-08-08: **Zustand chosen; design settled as a layered provider store** [human + ai]. Human
+  asked directly whether a state library would help or whether AppConfig was reinventing one. Honest
+  answer was *partly yes*: the facade (one read surface, source hidden) is an interface decision no
+  library provides, but the reactive layer previously sketched — subscribe/notify + cached snapshot
+  + `useSyncExternalStore` — is essentially what Zustand's core already is. Human decided Zustand and
+  supplied a full sample: [sample-store-implementation.ts](task-018/sample-store-implementation.ts).
+  **This reverses the 2026-08-01 "without zustand" note and supersedes the 2026-07-20 `SettingsStore`
+  port** — the port's whole justification was keeping a remote store swappable, which the provider
+  layering now delivers directly (add an async provider, no call site changes). Worth noting: the
+  library's real earner here isn't reactivity — config is written about once per visit to
+  `/settings`, so selector-tuning optimises nothing — it's not hand-rolling store mechanics, plus a
+  path to versioned migration.
+  **Reviewed the sample; four defects found and fixed in the plan.** (1) Stored values were
+  `JSON.parse`d and deep-merged **unvalidated** — this repo deliberately validates untrusted stored
+  values (`parseTuning` exists precisely so "a bad client payload can't break a quiz or smuggle
+  absurd values through"); a hand-edited blob would have reached SRS math and produced `NaN`
+  intervals. Each group's partial now runs through its owning module's parser, invalid → dropped.
+  (2) `setUserOverride` called `init()`, re-running *every* provider — once a BE provider exists,
+  changing one local setting would fire and await a network fetch; now it re-resolves from cached
+  provider partials. (3) `getConfig()` could silently return `DEFAULTS` before `init()` resolved, so
+  `tuningHeader()` would have shipped default tuning to the quiz API and silently ignored the user's
+  settings — added `status: 'pending' | 'ready'` + `whenReady()`. (4) The localStorage write had no
+  `window` guard and no `try/catch`, unlike every other write in the codebase.
+  **Cut as unnecessary:** the `{ name: 'default' }` provider entry (`resolve()` already reduces from
+  `DEFAULTS`, so defaults were applied twice) and the `'seeded'` status name, a leftover from the
+  sample's pre-`init()` iteration. **Kept:** provider layering, `DeepPartial` partials, `useShallow`,
+  and `setUserOverride` as a name. **Renamed** per the 2026-08-02 side-naming rule: `AppConfig` →
+  `ClientConfig`, accessors `useClientConfig`/`getClientConfig`, file stays `config.client.ts`.
+  **Precedence decided: `env > localStorage > DEFAULTS`** — env is a deployment override, so a
+  kill-switch beats a user preference. Non-obvious consequence: the env provider must contribute a
+  key *only when the variable is set*, or `parseBooleanEnv(…, true)`'s own fallback would
+  permanently mask every user override.
+  **Storage: one versioned `app_config` blob**, chosen over per-group keys. Needs a legacy path, so
+  it reads the existing `finnish_srs_tuning` when the blob lacks that group and **leaves the old key
+  in place** — deleting it gains nothing and would lose tuning if this needs reverting.
+  **Naming rule from the human:** `finnish` belongs in a name only when it genuinely refers to the
+  Finnish *language*, since the app is meant to extend to more languages — hence `app_config`, not
+  `finnish_app_config`. Existing `finnish_`-prefixed keys are stored user data and stay unrenamed;
+  they age out as each group migrates into the neutral blob.
+  **Scope this pass:** build the store complete, migrate **only** SRS tuning. Translation source
+  order and vocab sheet ID keep their current helpers; generating the Settings page stays a later
+  phase (the Goal is unchanged — the store is its prerequisite). Also updated the Constraints line,
+  which still referred to a localStorage *adapter* that this design no longer has.
+- 2026-08-08: Pass 1 implemented [ai]. 45/45 tests (22 new), `tsc --noEmit` + eslint clean, dev
+  server renders `/settings` with an empty error log. Four things worth recording beyond the plan:
+  **(1) `saveVocab` moved from a sync read to `await whenReady()`** — not in the plan, but making env
+  a *provider* means `savingEnabled` is no longer resolved at import; a sync read racing `init()`
+  would have returned the default `true` and saved a word even with the kill-switch set. The
+  function was already async, so this is free. Same reasoning already applied to `tuningHeader()`.
+  **(2) Named the mount component `ConfigInit`, not `ConfigProvider`** — "provider" already means a
+  config *source* in this design, so `ConfigProvider` would have read as an env/localStorage/api
+  layer rather than the initializer.
+  **(3) One test disproved its own premise:** an assertion that a stored `vocabStore.savingEnabled`
+  survives an unset env var failed, correctly — only groups with a validator are read back out of
+  the blob, and `savingEnabled` is deployment-only, so hand-writing it does nothing. Replaced with
+  a direct check of the real invariant (`byProvider.env` is `{}` when the variable is unset) plus
+  one documenting the deployment-only semantics. The masking bug the plan warned about isn't
+  observable through the resolved config today, because no entry has both an env source and a user
+  override — a white-box assertion is the only way to pin it before one does.
+  **(4) `persist()` re-reads through `loadLocal()`** instead of returning the validated blob it just
+  wrote, so overriding one group can't drop another group's legacy-key value from the cached layer.
+  Left alone deliberately: `optionalEnv` in [env.ts](../../src/config/env.ts) now has no callers
+  outside its own test (it never had one — added speculatively in task-019); deleting it is a
+  judgement call for the human, not this task.
+- 2026-08-08: **Consumers made fully sync: `ConfigGate` replaces `ConfigInit` + the async accessor**
+  [human + ai]. Human flagged `whenReady()` as a confusing name ("no need for it to imply waiting")
+  and asked whether calling it from several places re-ran `init()` — it didn't (`initPromise` is
+  module-level; first caller triggers the one load, everyone else awaits it), but the question
+  exposed that *two* things triggered resolution: `ConfigInit` for the render path and the async
+  accessor for imperative callers. Renamed to `loadClientConfig()` first, then the human proposed the
+  better shape: have one component initialise the store and **hold rendering until `status` flips to
+  ready**, so every consumer reads synchronously and the async accessor disappears entirely.
+  **Adopted.** `loadClientConfig` is gone; `tuningHeader()` and `saveVocab()` are plain sync reads
+  again, and `SettingsPanel`'s adopt-effect became unnecessary too (`saved` is the real value on its
+  first render now).
+  **Two real costs, accepted and scoped.** (1) **SSR content is traded for the placeholder** —
+  `init()` runs in an effect, so `status` is `pending` during SSR and the gate's fallback is what gets
+  server-rendered; page content appears after hydration. Verified against the running dev server:
+  `/settings` HTML contains the `aria-busy` placeholder and none of the preset labels. Scoped by
+  gating **`{children}` only** and leaving `TopBar` outside, so the chrome still SSRs (confirmed in
+  the same HTML). Cheap today because both providers are synchronous — the wait is one render, not a
+  load. (2) **The gate must be re-decided when the `/api/config` provider lands**: it would then block
+  the whole app on a network fetch, turning a slow or failed config request into a blank screen, where
+  swap-in behaviour degrades gracefully. Recorded in the gate's own doc comment and in the Approach
+  above so it isn't rediscovered by accident.
+  Re-verified: 45/45 tests, `tsc --noEmit` + eslint clean, dev log empty. Replaced the "sync read
+  before init" test with one pinning the `pending → ready` transition, since the gate now depends
+  on it.

@@ -173,3 +173,13 @@ config is valid.
   `.env.local.example` needed no edit; updated the one prose reference in `docs/setup-guide.md`.
   Re-verified: 23/23 tests, `tsc --noEmit` clean, targeted `eslint` clean on all six changed files.
   Still in-review.
+- 2026-08-08: **Partly superseded by [[task-018_unified-settings-management]]** [ai]. That task
+  rebuilt `config.client.ts` as a layered Zustand store, so two Outputs above no longer describe the
+  file as it stands: the `clientConfig` export is **gone** (replaced by `useClientConfig` /
+  `getClientConfig` / `loadClientConfig` / `setUserOverride`), and the client side is no longer a plain
+  eager object — it resolves at `init()` from providers. Recorded here rather than edited into
+  Outputs, since a task's Log is the history and this task was `in-review` when it happened.
+  **Unaffected and still accurate:** `config.server.ts` (untouched, still an eager plain object with
+  camelCase keys), `env.ts`, `booleanEnv.ts`, `lib/auth.ts`, and this task's central point — that a
+  missing required entry fails with a clear named error. The camelCase/side-naming decision of
+  2026-08-02 also stands; task-018 followed it (`ClientConfig`, `useClientConfig`).

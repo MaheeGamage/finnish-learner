@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { notify } from '@/modules/notifications';
+import { useClientConfig, setUserOverride } from '@/config/config.client';
 import {
   DEFAULT_TUNING,
   PRESETS,
   parseTuning,
   profileOf,
-  saveTuning,
-  loadTuning,
   type PresetName,
   type ProfileName,
   type TuningConfig,
@@ -59,17 +58,11 @@ function statusFormula(thresholdSeconds: number): string {
 const equal = (a: TuningConfig, b: TuningConfig) => JSON.stringify(a) === JSON.stringify(b);
 
 export default function SettingsPanel() {
-  // Seed with the deterministic default so server and client first render match; the real saved
-  // config is read from localStorage after mount (below) to avoid an SSR hydration mismatch.
-  // `saved` tracks the persisted copy so we can show "unsaved changes" and gate the Save button.
-  const [draft, setDraft] = useState<TuningConfig>(DEFAULT_TUNING);
-  const [saved, setSaved] = useState<TuningConfig>(DEFAULT_TUNING);
-
-  useEffect(() => {
-    const stored = loadTuning();
-    setDraft(stored);
-    setSaved(stored);
-  }, []);
+  // `saved` is the persisted value, served by the config facade — used to show "unsaved changes"
+  // and gate the Save button. `ConfigGate` has already resolved config by the time this renders, so
+  // it's the real stored value on the first render and can seed the draft directly.
+  const saved = useClientConfig((c) => c.vocabTest.srsTuning);
+  const [draft, setDraft] = useState<TuningConfig>(saved);
 
   const profile: ProfileName = useMemo(() => profileOf(draft), [draft]);
   const dirty = !equal(draft, saved);
@@ -88,8 +81,7 @@ export default function SettingsPanel() {
       notify({ variant: 'error', message: 'Some values are invalid — check the highlighted fields.' });
       return;
     }
-    saveTuning(draft);
-    setSaved(draft);
+    setUserOverride({ vocabTest: { srsTuning: draft } });
     notify({ variant: 'success', message: 'Quiz settings saved' });
   };
 

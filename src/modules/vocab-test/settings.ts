@@ -1,12 +1,16 @@
 // User-tunable SRS settings (task-011). The four tunable groups — first-review intervals,
 // growth multipliers, the Known threshold, and session size — live here as the single source
-// of truth. Three named presets ship as starting points plus a Custom profile (any edit →
-// Custom). The active config persists in localStorage (per-device) and is sent to the quiz
-// API on each request, so the server-side mechanism/selector use the user's values.
+// of truth, along with the presets and the validator. Three named presets ship as starting
+// points plus a Custom profile (any edit → Custom).
 //
-// Base unit is SECONDS everywhere (decision 004). This module is isomorphic: the pure pieces
-// (types, presets, parse/validate, profileOf) run on client and server; only load/save/clear
-// touch localStorage and must be called from the browser.
+// Persistence is NOT here (task-018): the active value is served by the config facade
+// (`config.client.ts`, entry `vocabTest.srsTuning`), which owns where it's stored and validates
+// it through `parseTuning` below. This module stays the owner of the shape, the defaults, and the
+// validation; it just doesn't know the storage medium.
+//
+// Base unit is SECONDS everywhere (decision 004). Fully isomorphic — every export here runs on
+// client and server alike, which is what lets the quiz API routes validate the `x-srs-tuning`
+// header with `parseTuningJson` / `DEFAULT_TUNING`.
 import type { Grade } from './types';
 
 const MINUTE = 60;
@@ -51,8 +55,6 @@ export const PRESETS: Record<PresetName, TuningConfig> = {
 
 export const DEFAULT_PRESET: PresetName = 'standard';
 export const DEFAULT_TUNING: TuningConfig = PRESETS[DEFAULT_PRESET];
-
-const STORAGE_KEY = 'finnish_srs_tuning';
 
 const isPositiveFinite = (v: unknown, min: number): v is number =>
   typeof v === 'number' && Number.isFinite(v) && v >= min;
@@ -111,30 +113,4 @@ export function profileOf(config: TuningConfig): ProfileName {
     }
   }
   return 'custom';
-}
-
-// --- localStorage (browser only) ---
-
-export function loadTuning(): TuningConfig {
-  try {
-    return parseTuningJson(localStorage.getItem(STORAGE_KEY)) ?? DEFAULT_TUNING;
-  } catch {
-    return DEFAULT_TUNING;
-  }
-}
-
-export function saveTuning(config: TuningConfig): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  } catch (error) {
-    console.error('Error saving SRS tuning:', error);
-  }
-}
-
-export function clearTuning(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Error clearing SRS tuning:', error);
-  }
 }

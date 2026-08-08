@@ -29,8 +29,7 @@ translation and linguistic context as you read.
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 
-- [[task-014_cap-new-word-intake]] — reverted (new-word intake needs a rethink; WIP cap stranded large decks)
-- [[task-018_unified-settings-management]] — to-do
+- [[task-018_unified-settings-management]] — in-progress
 - [[task-019_centralized-app-config]] — in-review
 
 ## Output locations

@@ -1,5 +1,5 @@
 import { getVocabSheetId } from './sheetSettings';
-import { clientConfig } from '@/config/config.client';
+import { getClientConfig } from '@/config/config.client';
 import { notify } from '@/modules/notifications';
 
 const SHEET_ID_HEADER = 'x-vocab-sheet-id';
@@ -22,7 +22,8 @@ export async function saveVocab(
   sourceLang: string,
   targetLang: string,
 ): Promise<void> {
-  if (!clientConfig.vocabSavingEnabled) return;
+  // Safe as a sync read: `ConfigGate` resolves the kill-switch before any reader UI can call this.
+  if (!getClientConfig().vocabStore.savingEnabled) return;
 
   const sheetId = getVocabSheetId();
   // No sheet configured yet — nothing to save to. Reading is unaffected.

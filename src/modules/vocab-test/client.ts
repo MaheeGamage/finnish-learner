@@ -1,5 +1,5 @@
 import { getVocabSheetId } from '@/modules/vocab-store';
-import { loadTuning } from './settings';
+import { getClientConfig } from '@/config/config.client';
 import type {
   Grade,
   QuizCard,
@@ -12,7 +12,8 @@ const SHEET_ID_HEADER = 'x-vocab-sheet-id';
 const TUNING_HEADER = 'x-srs-tuning';
 
 // The user's saved SRS settings (task-011), sent to the API so grading/selection use them.
-const tuningHeader = (): string => JSON.stringify(loadTuning());
+// A sync read is safe here: `ConfigGate` resolves config before any UI that could start a quiz.
+const tuningHeader = (): string => JSON.stringify(getClientConfig().vocabTest.srsTuning);
 
 export type QuizSessionResult =
   | { ok: true; cards: QuizCard[] }
