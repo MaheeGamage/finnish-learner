@@ -1,12 +1,16 @@
-// User-tunable SRS settings (task-011). The four tunable groups — first-review intervals,
-// growth multipliers, the Known threshold, and session size — live here as the single source
-// of truth. Three named presets ship as starting points plus a Custom profile (any edit →
-// Custom). The active config persists in localStorage (per-device) and is sent to the quiz
-// API on each request, so the server-side mechanism/selector use the user's values.
+// User-tunable quiz settings (task-011, task-020). The tunable groups — first-review intervals,
+// growth multipliers, the Known threshold, session size, and the question-direction mix — live
+// here as the single source of truth, along with the presets and the validator. Three named
+// presets ship as starting points plus a Custom profile (any edit → Custom).
 //
-// Base unit is SECONDS everywhere (decision 004). This module is isomorphic: the pure pieces
-// (types, presets, parse/validate, profileOf) run on client and server; only load/save/clear
-// touch localStorage and must be called from the browser.
+// Persistence is NOT here (task-018): the active value is served by the config facade
+// (`config.client.ts`, entry `SRS_TUNING` declared in `entries.client.ts`), which owns where it's
+// stored and validates it through `parseTuning` below. This module stays the owner of the shape,
+// the defaults, and the validation; it just doesn't know the storage medium.
+//
+// Base unit is SECONDS everywhere (decision 004). Fully isomorphic — every export here runs on
+// client and server alike, which is what lets the quiz API routes validate the `x-srs-tuning`
+// header with `parseTuningJson` / `DEFAULT_TUNING`.
 import type { Grade } from './types';
 
 const MINUTE = 60;
@@ -15,12 +19,16 @@ const DAY = 86_400;
 
 const GRADES: readonly Grade[] = ['again', 'hard', 'good', 'easy'];
 
+// Recognition/production split when nothing is set — an even mix (task-020).
+export const DEFAULT_RECOGNITION_RATIO = 0.5;
+
 // The complete tuning state. firstReview + knownThresholdSeconds are in seconds.
 export interface TuningConfig {
   firstReview: Record<Grade, number>; // interval (s) on a word's first review, per grade
   multiplier: Record<Grade, number>; // factor applied to the interval on later reviews
   knownThresholdSeconds: number; // interval (s) at/above which a word reads as Known
   sessionSize: number; // cards per quiz session
+  recognitionRatio: number; // share of cards (0–1) testing recognition; the rest test production
 }
 
 export type PresetName = 'standard' | 'brisk' | 'rapid';
@@ -34,25 +42,26 @@ export const PRESETS: Record<PresetName, TuningConfig> = {
     multiplier: { again: 0, hard: 1.2, good: 2.5, easy: 3.5 },
     knownThresholdSeconds: 21 * DAY,
     sessionSize: 5,
+    recognitionRatio: DEFAULT_RECOGNITION_RATIO,
   },
   brisk: {
     firstReview: { again: 1 * MINUTE, hard: 5 * MINUTE, good: 6 * HOUR, easy: 1 * DAY },
     multiplier: { again: 0, hard: 1.2, good: 2.2, easy: 3 },
     knownThresholdSeconds: 5 * DAY,
     sessionSize: 5,
+    recognitionRatio: DEFAULT_RECOGNITION_RATIO,
   },
   rapid: {
     firstReview: { again: 30, hard: 2 * MINUTE, good: 1 * HOUR, easy: 6 * HOUR },
     multiplier: { again: 0, hard: 1.2, good: 2, easy: 2.5 },
     knownThresholdSeconds: 1 * DAY,
     sessionSize: 5,
+    recognitionRatio: DEFAULT_RECOGNITION_RATIO,
   },
 };
 
 export const DEFAULT_PRESET: PresetName = 'standard';
 export const DEFAULT_TUNING: TuningConfig = PRESETS[DEFAULT_PRESET];
-
-const STORAGE_KEY = 'finnish_srs_tuning';
 
 const isPositiveFinite = (v: unknown, min: number): v is number =>
   typeof v === 'number' && Number.isFinite(v) && v >= min;
@@ -80,7 +89,18 @@ export function parseTuning(raw: unknown): TuningConfig | null {
   if (!isPositiveFinite(obj.knownThresholdSeconds, 1)) return null;
   const size = obj.sessionSize;
   if (typeof size !== 'number' || !Number.isInteger(size) || size < 1 || size > 100) return null;
-  return { firstReview, multiplier, knownThresholdSeconds: obj.knownThresholdSeconds, sessionSize: size };
+  // Added after the field already had stored values (task-020): absent means "written before this
+  // existed", so it takes the default rather than invalidating the whole config. Present but
+  // out of range is still rejected — that's a bad payload, not an old one.
+  const ratio = obj.recognitionRatio ?? DEFAULT_RECOGNITION_RATIO;
+  if (typeof ratio !== 'number' || !Number.isFinite(ratio) || ratio < 0 || ratio > 1) return null;
+  return {
+    firstReview,
+    multiplier,
+    knownThresholdSeconds: obj.knownThresholdSeconds,
+    sessionSize: size,
+    recognitionRatio: ratio,
+  };
 }
 
 // Same, but from a JSON string (request header / stored blob). Tolerates null/garbage.
@@ -98,6 +118,8 @@ function gradesEqual(a: Record<Grade, number>, b: Record<Grade, number>): boolea
 }
 
 // Which profile the config corresponds to — a matching preset name, or 'custom' if hand-tuned.
+// `recognitionRatio` is deliberately not compared: presets are spacing timelines, and the direction mix
+// is orthogonal to pace, so changing it must not push the user into Custom.
 export function profileOf(config: TuningConfig): ProfileName {
   for (const name of Object.keys(PRESETS) as PresetName[]) {
     const p = PRESETS[name];
@@ -111,30 +133,4 @@ export function profileOf(config: TuningConfig): ProfileName {
     }
   }
   return 'custom';
-}
-
-// --- localStorage (browser only) ---
-
-export function loadTuning(): TuningConfig {
-  try {
-    return parseTuningJson(localStorage.getItem(STORAGE_KEY)) ?? DEFAULT_TUNING;
-  } catch {
-    return DEFAULT_TUNING;
-  }
-}
-
-export function saveTuning(config: TuningConfig): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  } catch (error) {
-    console.error('Error saving SRS tuning:', error);
-  }
-}
-
-export function clearTuning(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Error clearing SRS tuning:', error);
-  }
 }

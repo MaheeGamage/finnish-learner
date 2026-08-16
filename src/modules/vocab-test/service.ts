@@ -29,6 +29,7 @@ export function getQuizService(
     selector: createPrioritySessionSelector({
       ...DEFAULT_PRIORITY_CONFIG,
       knownThresholdSeconds: tuning.knownThresholdSeconds,
+      recognitionRatio: tuning.recognitionRatio,
     }),
   };
 }
