@@ -46,32 +46,33 @@ function serverSide(): void {
   delete g.localStorage;
 }
 
-const blob = (value: unknown, version: unknown = 1) =>
-  JSON.stringify({ version, vocabTest: { srsTuning: value } });
+// The keys the entries declare. Spelled out rather than imported, so a rename has to be deliberate:
+// SRS_TUNING's key is a storage contract with every device that already has a value under it.
+const SRS_TUNING_KEY = 'srs_tuning';
 
-test('defaults resolve when nothing is stored and no env var is set', async () => {
+test('every entry resolves to its declared default when nothing is stored and no env var is set', async () => {
   fakeBrowser();
   delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
 
   const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, DEFAULT_TUNING);
-  assert.equal(getClientConfig().vocabStore.savingEnabled, true);
+  assert.deepEqual(getClientConfig().SRS_TUNING, DEFAULT_TUNING);
+  assert.equal(getClientConfig().VOCAB_SAVING_ENABLED, true);
 });
 
-test('a stored override beats the default', async () => {
-  fakeBrowser({ app_config: blob(PRESETS.rapid) });
+test('a stored value beats the default', async () => {
+  fakeBrowser({ [SRS_TUNING_KEY]: JSON.stringify(PRESETS.rapid) });
   delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
 
   const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, PRESETS.rapid);
+  assert.deepEqual(getClientConfig().SRS_TUNING, PRESETS.rapid);
 });
 
-test('env beats a stored override', async () => {
-  fakeBrowser({ app_config: JSON.stringify({ version: 1, vocabStore: { savingEnabled: true } }) });
+test('env beats the default', async () => {
+  fakeBrowser();
   process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED = 'false';
 
   const { getClientConfig } = await resolved();
-  assert.equal(getClientConfig().vocabStore.savingEnabled, false);
+  assert.equal(getClientConfig().VOCAB_SAVING_ENABLED, false);
 
   delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
 });
@@ -92,107 +93,126 @@ test('the env provider contributes the parsed value when its variable is set', a
   process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED = 'false';
 
   const { useClientConfigStore } = await resolved();
-  assert.deepEqual(useClientConfigStore.getState().byProvider.env, {
-    vocabStore: { savingEnabled: false },
+  assert.deepEqual(useClientConfigStore.getState().byProvider.env, { VOCAB_SAVING_ENABLED: false });
+
+  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
+});
+
+// VOCAB_SAVING_ENABLED declares no `localStorageKey`: it's a deployment flag, not a per-device
+// preference, so hand-writing one does nothing however the key is spelled.
+test('an env-only entry is never read from localStorage', async () => {
+  fakeBrowser({ VOCAB_SAVING_ENABLED: 'false', vocabSavingEnabled: 'false' });
+  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
+
+  const { getClientConfig } = await resolved();
+  assert.equal(getClientConfig().VOCAB_SAVING_ENABLED, true);
+});
+
+test('an invalid stored value is rejected and the default wins', async () => {
+  // A multiplier that isn't a number would otherwise reach the SRS interval maths.
+  fakeBrowser({
+    [SRS_TUNING_KEY]: JSON.stringify({ ...PRESETS.rapid, multiplier: { good: 'abc' } }),
   });
 
-  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
-});
-
-// `savingEnabled` is a deployment flag, not a per-device preference: only groups with a validator
-// are read back out of the blob, so writing it by hand does nothing.
-test('a stored value for an env-only entry is ignored', async () => {
-  fakeBrowser({ app_config: JSON.stringify({ version: 1, vocabStore: { savingEnabled: false } }) });
-  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
-
   const { getClientConfig } = await resolved();
-  assert.equal(getClientConfig().vocabStore.savingEnabled, true);
-});
-
-test('an invalid stored group is rejected and the default wins', async () => {
-  // A multiplier that isn't a number would otherwise reach the SRS interval maths.
-  fakeBrowser({ app_config: blob({ ...PRESETS.rapid, multiplier: { good: 'abc' } }) });
-  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
-
-  const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, DEFAULT_TUNING);
+  assert.deepEqual(getClientConfig().SRS_TUNING, DEFAULT_TUNING);
 });
 
 test('unparseable stored JSON is ignored', async () => {
-  fakeBrowser({ app_config: 'not json{' });
+  fakeBrowser({ [SRS_TUNING_KEY]: 'not json{' });
 
   const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, DEFAULT_TUNING);
+  assert.deepEqual(getClientConfig().SRS_TUNING, DEFAULT_TUNING);
 });
 
-test('a blob with an unknown version is ignored outright', async () => {
-  fakeBrowser({ app_config: blob(PRESETS.rapid, 99) });
+// Per-entry keys, chosen over one shared blob: a corrupt value costs only its own entry, and there
+// is no blob version to migrate. This pins the isolation.
+test('one unparseable key does not disturb another entry', async () => {
+  fakeBrowser({ [SRS_TUNING_KEY]: '{{{', unrelated_key: 'garbage' });
+  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
 
   const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, DEFAULT_TUNING);
+  assert.deepEqual(getClientConfig().SRS_TUNING, DEFAULT_TUNING);
+  assert.equal(getClientConfig().VOCAB_SAVING_ENABLED, true);
 });
 
-test('legacy finnish_srs_tuning is picked up when the blob lacks that group', async () => {
+// Decided with the human (2026-08-16): no migration off the pre-blob key. Every device's saved
+// tuning resets once, to Standard. Pinned as a test so the reset is a recorded choice, not a
+// regression someone "fixes" by accident.
+test('the pre-existing finnish_srs_tuning key is deliberately not read', async () => {
   fakeBrowser({ finnish_srs_tuning: JSON.stringify(PRESETS.brisk) });
 
   const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, PRESETS.brisk);
+  assert.deepEqual(getClientConfig().SRS_TUNING, DEFAULT_TUNING);
 });
 
-test('the blob wins over the legacy key once both exist', async () => {
-  fakeBrowser({
-    app_config: blob(PRESETS.rapid),
-    finnish_srs_tuning: JSON.stringify(PRESETS.brisk),
-  });
-
-  const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, PRESETS.rapid);
-});
-
-test('setUserOverride persists a versioned blob and re-resolves', async () => {
+test('setUserOverride writes the entry to its own key and re-resolves', async () => {
   const data = fakeBrowser();
 
   const { setUserOverride, getClientConfig } = await resolved();
-  setUserOverride({ vocabTest: { srsTuning: PRESETS.brisk } });
+  setUserOverride({ SRS_TUNING: PRESETS.brisk });
 
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, PRESETS.brisk);
-  assert.deepEqual(JSON.parse(data.app_config), {
-    version: 1,
-    vocabTest: { srsTuning: PRESETS.brisk },
-  });
+  assert.deepEqual(getClientConfig().SRS_TUNING, PRESETS.brisk);
+  assert.deepEqual(JSON.parse(data[SRS_TUNING_KEY]), PRESETS.brisk);
+  // The raw value, with no wrapper: the key holds exactly what the entry's `parse` reads back.
+  assert.deepEqual(Object.keys(data), [SRS_TUNING_KEY]);
 });
 
-test('setUserOverride leaves the legacy key in place', async () => {
-  const data = fakeBrowser({ finnish_srs_tuning: JSON.stringify(PRESETS.brisk) });
+// `userOverride` is the write permission. VOCAB_SAVING_ENABLED doesn't have it, so an override must
+// be refused outright rather than written to a key nothing reads — which would look like it worked.
+test('setUserOverride refuses an entry that is not user-writable', async () => {
+  const data = fakeBrowser();
+  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
+
+  const { setUserOverride, getClientConfig } = await resolved();
+  setUserOverride({ VOCAB_SAVING_ENABLED: false });
+
+  assert.deepEqual(data, {});
+  assert.equal(getClientConfig().VOCAB_SAVING_ENABLED, true);
+});
+
+test('a user override cannot beat an env-provided value', async () => {
+  fakeBrowser();
+  process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED = 'false';
+
+  const { setUserOverride, getClientConfig } = await resolved();
+  setUserOverride({ VOCAB_SAVING_ENABLED: true });
+  assert.equal(getClientConfig().VOCAB_SAVING_ENABLED, false);
+
+  delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
+});
+
+test('an override leaves other keys in storage untouched', async () => {
+  const data = fakeBrowser({ finnish_reader_position: '42' });
 
   const { setUserOverride } = await resolved();
-  setUserOverride({ vocabTest: { srsTuning: PRESETS.rapid } });
+  setUserOverride({ SRS_TUNING: PRESETS.rapid });
 
-  assert.equal(data.finnish_srs_tuning, JSON.stringify(PRESETS.brisk));
+  assert.equal(data.finnish_reader_position, '42');
 });
 
 // ConfigGate holds rendering on `status`, which is what lets every consumer read synchronously —
 // so the pending → ready transition is load-bearing, not incidental.
 test('status is pending until init() resolves, and sync reads are defaults until then', async () => {
-  fakeBrowser({ app_config: blob(PRESETS.rapid) });
+  fakeBrowser({ [SRS_TUNING_KEY]: JSON.stringify(PRESETS.rapid) });
 
   const { useClientConfigStore, getClientConfig } = await importFresh();
   assert.equal(useClientConfigStore.getState().status, 'pending');
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, DEFAULT_TUNING);
+  assert.deepEqual(getClientConfig().SRS_TUNING, DEFAULT_TUNING);
 
   await useClientConfigStore.getState().init();
   assert.equal(useClientConfigStore.getState().status, 'ready');
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, PRESETS.rapid);
+  assert.deepEqual(getClientConfig().SRS_TUNING, PRESETS.rapid);
 });
 
 test('concurrent init() calls resolve to one run', async () => {
-  fakeBrowser({ app_config: blob(PRESETS.rapid) });
+  fakeBrowser({ [SRS_TUNING_KEY]: JSON.stringify(PRESETS.rapid) });
 
   const { useClientConfigStore } = await importFresh();
   const { init } = useClientConfigStore.getState();
   await Promise.all([init(), init(), init()]);
   assert.equal(useClientConfigStore.getState().status, 'ready');
-  assert.deepEqual(useClientConfigStore.getState().config.vocabTest.srsTuning, PRESETS.rapid);
+  assert.deepEqual(useClientConfigStore.getState().config.SRS_TUNING, PRESETS.rapid);
 });
 
 test('resolves to defaults server-side, where there is no localStorage', async () => {
@@ -200,6 +220,6 @@ test('resolves to defaults server-side, where there is no localStorage', async (
   delete process.env.NEXT_PUBLIC_VOCAB_SAVING_ENABLED;
 
   const { getClientConfig } = await resolved();
-  assert.deepEqual(getClientConfig().vocabTest.srsTuning, DEFAULT_TUNING);
-  assert.equal(getClientConfig().vocabStore.savingEnabled, true);
+  assert.deepEqual(getClientConfig().SRS_TUNING, DEFAULT_TUNING);
+  assert.equal(getClientConfig().VOCAB_SAVING_ENABLED, true);
 });

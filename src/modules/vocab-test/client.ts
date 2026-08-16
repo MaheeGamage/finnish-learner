@@ -13,7 +13,7 @@ const TUNING_HEADER = 'x-srs-tuning';
 
 // The user's saved SRS settings (task-011), sent to the API so grading/selection use them.
 // A sync read is safe here: `ConfigGate` resolves config before any UI that could start a quiz.
-const tuningHeader = (): string => JSON.stringify(getClientConfig().vocabTest.srsTuning);
+const tuningHeader = (): string => JSON.stringify(getClientConfig().SRS_TUNING);
 
 export type QuizSessionResult =
   | { ok: true; cards: QuizCard[] }

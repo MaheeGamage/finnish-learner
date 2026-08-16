@@ -4,9 +4,9 @@
 // points plus a Custom profile (any edit → Custom).
 //
 // Persistence is NOT here (task-018): the active value is served by the config facade
-// (`config.client.ts`, entry `vocabTest.srsTuning`), which owns where it's stored and validates
-// it through `parseTuning` below. This module stays the owner of the shape, the defaults, and the
-// validation; it just doesn't know the storage medium.
+// (`config.client.ts`, entry `SRS_TUNING` declared in `entries.client.ts`), which owns where it's
+// stored and validates it through `parseTuning` below. This module stays the owner of the shape,
+// the defaults, and the validation; it just doesn't know the storage medium.
 //
 // Base unit is SECONDS everywhere (decision 004). Fully isomorphic — every export here runs on
 // client and server alike, which is what lets the quiz API routes validate the `x-srs-tuning`

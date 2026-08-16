@@ -1,5 +1,5 @@
 ---
-status: in-progress    # to-do | in-progress | in-review | done
+status: done    # to-do | in-progress | in-review | done
 owner: both
 goal: "[[002-build-v2-mvp]]"
 ---
@@ -26,25 +26,34 @@ goal: "[[002-build-v2-mvp]]"
 
 ```mermaid
 flowchart LR
-  ENV["env · NEXT_PUBLIC_*<br/>(only if set)"] --> R{{"resolve()<br/>deep merge, env wins"}}
-  LS[("localStorage<br/>app_config blob")] --> R
+  T[["entries.client.ts<br/>ONE declaration per value"]] --> ENV
+  T --> LS
+  T --> DEF
+  ENV["env provider · NEXT_PUBLIC_*<br/>(only if set)"] --> R{{"resolve()<br/>per entry, first layer wins"}}
+  LS[("localStorage provider<br/>one key per entry")] --> R
   API[("/api/config")] -. later .-> R
-  DEF[DEFAULTS] --> R
+  DEF["defaultValue"] --> R
   R --> S["config.client.ts<br/>Zustand store"]
   S --> G["ConfigGate<br/>holds render until ready"]
   G --> A["useClientConfig · getClientConfig<br/>(both sync)"]
   S -- setUserOverride --> LS
-  S -. "later phase: entries with ui" .-> UI[/Settings page — generated/]
+  T -. "later phase: entries with ui" .-> UI[/Settings page — generated/]
 ```
 
-- **Approach — layered config store (Zustand).** Sample this follows:
-  [sample-store-implementation.ts](task-018/sample-store-implementation.ts).
-  - [config.client.ts](../../src/config/config.client.ts) is the single **facade**. **Providers**
-    each supply a `DeepPartial<ClientConfig>`; the store deep-merges them by precedence into one
-    resolved config. A consumer reads a value and never learns its source (constant / env /
+- **Approach — one declaration table, read through a layered store (Zustand).**
+  - [entries.client.ts](../../src/config/entries.client.ts) is where a value is **declared once**:
+    its `defaultValue`, and which sources it opts into (`envValue`+`parseEnv`,
+    `localStorageKey`+`parse`+`userOverride`). `ClientConfig` is **derived** from the table, and the
+    providers are generic walkers over it — adding a setting touches this file only.
+  - **Flat, one entry per value.** An entry may still hold an object (`SRS_TUNING` does), stored and
+    validated atomically by its owning module's parser. Nesting bought grouping and cost a deep
+    merge, a nested partial type and per-group storage plumbing.
+  - [config.client.ts](../../src/config/config.client.ts) is the single **facade**. Providers each
+    supply a `Partial<ClientConfig>`; `resolve()` takes, per entry, the value from the first layer
+    that supplied one. A consumer reads a value and never learns its source (constant / env /
     localStorage / backend later).
-  - **Precedence `env > localStorage > DEFAULTS`** — env is a deployment override, so a kill-switch
-    like `vocabSavingEnabled` beats a user preference. The env provider therefore contributes a key
+  - **Precedence `env > localStorage > defaultValue`** — env is a deployment override, so a kill-switch
+    like `VOCAB_SAVING_ENABLED` beats a user preference. The env provider therefore contributes a key
     **only when the variable is actually set**; otherwise its own fallback would permanently mask
     every user override.
   - Accessors, both **sync**: `useClientConfig(selector)` (React, `useShallow`) and
@@ -57,11 +66,13 @@ flowchart LR
     in later with no call-site change. Writes stay localStorage-only until a BE contract exists.
     **Revisit the gate then** — blocking the whole app on a network fetch degrades far worse than
     letting defaults render and swapping values in.
-  - Persistence: one versioned `app_config` blob. Each group's stored value is validated by **its
-    owning module's existing parser** (`parseTuning`, `parseSourceOrder`) before merging — an
-    invalid group is dropped and defaults win.
+  - Persistence: **one localStorage key per entry**, named by the entry. Each stored value is
+    validated by **its owning module's parser** (`parseTuning`, `parseSourceOrder`) on the way in —
+    an invalid value is dropped on its own and its default wins, without touching its neighbours.
+    No shared blob, so no blob version to migrate. `userOverride` is the write permission: an entry
+    without it is refused by `setUserOverride` rather than written to a key nothing reads.
   - Settings page still to be **generated** from the declarations — a later phase of this task; the
-    store is its prerequisite.
+    table is its prerequisite.
   - Modules keep owning their value types and validators — the store is generic over them.
 - **Constraints:** no direct `localStorage` outside the config store's providers; must not regress
   [[task-011_expose-srs-tuning-config]] (SRS tuning) or
@@ -74,7 +85,7 @@ flowchart LR
 Pass 1 — build the store, migrate SRS tuning only:
 - [x] Record the chosen design in this file (Approach above + Log entry below)
 - [x] Add `zustand`; extract pure `deepMerge` + `DeepPartial` into `src/config/deepMerge.ts`
-- [x] Rewrite `config.client.ts`: `ClientConfig` tree, `DEFAULTS`, env + localStorage providers,
+- [x] Rewrite `config.client.ts`: `ClientConfig` tree, `CLIENT_CONFIG_DEFAULTS`, env + localStorage providers,
       `resolve()`, the store, and the four accessors
 - [x] Persist a versioned `app_config` blob; non-destructive fallback read of the legacy
       `finnish_srs_tuning` key (old key left in place, not deleted)
@@ -90,40 +101,66 @@ Pass 1 — build the store, migrate SRS tuning only:
 - [ ] **Human check in a browser** — the parts a Node test can't reach: edit → Save → reload
       persists; quiz request carries `x-srs-tuning` with the edited values; no hydration warning
 
+Pass 2 — one declaration table (done):
+- [x] Replace the per-file provider code with a **single declaration table** — sketch in
+      [client-config-data-structure.ts](task-018/client-config-data-structure.ts); `ClientConfig`
+      derived from it rather than hand-written
+- [x] Flatten the config: one entry per value, per-entry localStorage keys, no deep merge
+- [x] Verify: 40/40 `node:test` (17 rewritten), `tsc --noEmit` + eslint clean, dev server renders
+      `/settings`, `/` and `/test`
+- [ ] **Human check in a browser** (now covers both passes) — edit → Save → reload persists under
+      the new `srs_tuning` key; quiz request carries `x-srs-tuning` with the edited values; no
+      hydration warning
+
 Later passes:
 - [ ] Migrate translation source order + vocab sheet ID onto the store
-- [ ] Generate the Settings page from the declarations (needs `ui` metadata on each entry)
+- [ ] Generate the Settings page from the table (needs `ui` metadata on each entry)
 
 ## Outputs
 
-- [config.client.ts](../../src/config/config.client.ts) — the facade. `ClientConfig` tree
-  (`vocabTest.srsTuning`, `vocabStore.savingEnabled`), `DEFAULTS`, the `env` + `localStorage`
-  providers, `resolve()`, the Zustand store, and four accessors: `useClientConfig(selector)`,
-  `getClientConfig()`, `setUserOverride()` — the first two both sync, per `ConfigGate` below.
-- [deepMerge.ts](../../src/config/deepMerge.ts) — pure `deepMerge` + `DeepPartial` + `isPlainObject`.
-  Arrays replace rather than merge; `undefined` never clobbers a lower layer.
+- [entries.client.ts](../../src/config/entries.client.ts) — **the declaration table**, and the one
+  file adding a setting touches. The two entries (`VOCAB_SAVING_ENABLED`, `SRS_TUNING`) and, derived
+  from them, `ClientConfig` / `ConfigKey` / `PartialClientConfig` and the type-erased
+  `configEntryList()` the walkers iterate.
+- [entry.ts](../../src/config/entry.ts) — what an entry *is*, kept apart so the table stays purely
+  declarative: `ConfigEntry<T>` (each source paired with its parser by the type, so a source without
+  validation is a compile error), `defineEntry<T>()`, `AnyConfigEntry`, and `ConfigOf<Table>`. Names
+  no setting, no env var and no storage key, so a server-side table could reuse it unchanged.
+- [config.client.ts](../../src/config/config.client.ts) — the facade. Providers list, `resolveFrom()`
+  (per entry: first layer that supplied a value, else `defaultValue`), the Zustand store, and the
+  accessors `useClientConfig(selector)` / `getClientConfig()` / `setUserOverride()` — the first two
+  both sync, per `ConfigGate` below.
+- [providers/envProvider.ts](../../src/config/providers/envProvider.ts) +
+  [providers/localStorageProvider.ts](../../src/config/providers/localStorageProvider.ts) — generic
+  walkers over the table; neither names a setting. localStorage also owns the write
+  (`persistUserOverride`), one key per entry, re-reading the layer afterwards so the cached copy is
+  what a fresh load would produce.
+- [types.ts](../../src/config/types.ts) — just the `ConfigProvider` contract now; the shape moved to
+  the table.
 - [ConfigGate.tsx](../../src/config/ConfigGate.tsx) — wraps `{children}` in
   [layout.tsx](../../src/app/layout.tsx): resolves config in a mount effect and renders a blank
   placeholder while `status === 'pending'`. Not named `ConfigProvider` because "provider" already
   means a config *source* here.
-- [deepMerge.test.ts](../../src/config/deepMerge.test.ts) (6) +
-  [config.client.test.ts](../../src/config/config.client.test.ts) (16) — 22 new `node:test` units;
-  45/45 total. Cover precedence, the env-provider-stays-silent-when-unset invariant, rejection of
-  invalid/unversioned/unparseable stored blobs, the legacy-key fallback and that it's left in place,
-  `setUserOverride` round-trip, the `pending → ready` transition the gate depends on, concurrent
-  `init()`, and the server-side path.
+- [config.client.test.ts](../../src/config/config.client.test.ts) (17) — 40/40 total. Cover
+  precedence both ways, the env-provider-stays-silent-when-unset invariant, rejection of invalid and
+  unparseable stored values, per-key isolation (one corrupt key can't disturb another entry), that
+  the legacy `finnish_srs_tuning` key is deliberately *not* read, `setUserOverride` writing to the
+  entry's own key and refusing a non-writable entry, the `pending → ready` transition the gate
+  depends on, concurrent `init()`, and the server-side path.
+- Deleted: `deepMerge.ts` + `deepMerge.test.ts` (6 tests) — flat entries resolve per key, so nothing
+  merges any more.
 - [vocab-test/settings.ts](../../src/modules/vocab-test/settings.ts) — `STORAGE_KEY`, `loadTuning`,
   `saveTuning`, `clearTuning` removed (`clearTuning` had no callers). Still owns the shape, presets,
   defaults and validators; now fully isomorphic.
 - [vocab-test/client.ts](../../src/modules/vocab-test/client.ts) — `tuningHeader()` reads
-  `getClientConfig().vocabTest.srsTuning`; stays sync, since the gate guarantees resolution.
+  `getClientConfig().SRS_TUNING`; stays sync, since the gate guarantees resolution.
 - [SettingsPanel.tsx](../../src/modules/vocab-test/components/SettingsPanel.tsx) — reads `saved` via
-  `useClientConfig`, writes via `setUserOverride`; the `loadTuning()` mount effect and the local
-  `saved` state are gone.
+  `useClientConfig`, writes via `setUserOverride({ SRS_TUNING })`; the `loadTuning()` mount effect
+  and the local `saved` state are gone.
 - [saveVocab.ts](../../src/modules/vocab-store/saveVocab.ts) — reads
-  `getClientConfig().vocabStore.savingEnabled`; sync, guaranteed resolved by the gate.
-- [docs/setup-guide.md](../../docs/setup-guide.md) — the `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` note
-  pointed at the deleted `clientConfig` export.
+  `getClientConfig().VOCAB_SAVING_ENABLED`; sync, guaranteed resolved by the gate.
+- [docs/setup-guide.md](../../docs/setup-guide.md) — the `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` note now
+  names the entry and where it's declared.
 - `package.json` — `zustand@^5.0.14`.
 
 ## Done when
@@ -304,3 +341,59 @@ const { sortOrder, apiBaseUrl, setSortOrder } = useAppConfig();
   Re-verified: 45/45 tests, `tsc --noEmit` + eslint clean, dev log empty. Replaced the "sync read
   before init" test with one pinning the `pending → ready` transition, since the gate now depends
   on it.
+- 2026-08-09: **Paused. Next pass agreed: one declaration table** [human + ai]. Pass 1 centralised
+  *access* but not *declaration* — adding a setting still means editing four files (shape in
+  `types.ts`, default in `config.client.ts`, env var in `envProvider.ts`, validation + key in
+  `localStorageProvider.ts`), so the task's "one declaration" Done-when isn't met yet. Human sketched
+  the fix in [client-config-data-structure.ts](task-018/client-config-data-structure.ts): one entry
+  per value declaring `defaultValue` / `envValue` / `localStorageKey` / `parse` / `userOverride`,
+  with the providers reduced to generic walkers over the table and `ClientConfig` **derived** from it
+  instead of hand-written.
+  Settled while discussing: **arbitrary-depth tree**, not fixed two levels — the real gain isn't deep
+  nesting but being able to choose per value between one entry holding an object (validated and
+  stored atomically, keeps `parseTuning`) and a group of per-field entries (own key, own validator,
+  own Settings row). **Per-entry localStorage keys** replace the single `app_config` blob: declaring
+  the existing `finnish_srs_tuning` as the entry's key deletes the legacy-fallback and blob-version
+  code outright, at the cost of any atomic migrate hook. `savingEnabled` stays `userOverride: false`,
+  since env outranks localStorage and a toggle would otherwise silently do nothing.
+  Two constraints found: `envKey` **can't be a plain string** — Next.js only inlines a literal
+  `process.env.NEXT_PUBLIC_X`, so a dynamic lookup is `undefined` in the browser and it has to be a
+  getter; and entries want a `defineEntry<T>()` helper, because under a `ConfigEntry<unknown>`
+  constraint a mismatched `parse` (wrong validator for the default) type-checks fine.
+  Not started — pass 1's browser check is still the open item above.
+- 2026-08-16: **Pass 2 implemented — the declaration table, flat** [human + ai]. Human asked to build
+  the sketch, with two decisions changed from 2026-08-09. **(1) Flat, no nesting** (the sketch's own
+  closing note): the arbitrary-depth tree was the more capable option, but the capability it bought —
+  choosing per value between an atomic object entry and a group of per-field entries — is still
+  available flat, since an entry may just *hold* an object (`SRS_TUNING` does, validated atomically by
+  `parseTuning`). What went with the nesting: `deepMerge` + `DeepPartial` (deleted, 6 tests with
+  them), the nested `ClientConfig` interface, and per-group storage plumbing. `PartialClientConfig` is
+  now a plain `Partial`, and `resolve()` takes each entry whole from the first layer that supplied it
+  — a value now comes from exactly one source, which is easier to reason about than a merged one.
+  **(2) Keys are SCREAMING_SNAKE** (`getClientConfig().SRS_TUNING`), the sketch's spelling — a
+  departure from 2026-08-02's camelCase rule, chosen by the human so a config read is visibly a config
+  read at the call site. camelCase still holds for `serverConfig`, which is unchanged.
+  **Storage: a new neutral `srs_tuning` key with no migration** — chosen over reusing
+  `finnish_srs_tuning` (would keep the `finnish_` prefix on a non-language value) or migrating (would
+  re-introduce the legacy-fallback code this pass deletes). **Accepted cost: every device's saved
+  tuning resets once to Standard.** Pinned by a test so the reset stays a recorded decision rather
+  than something a later reader "fixes"; the old key is left in place, unread.
+  **`VOCAB_SAVING_ENABLED` kept `userOverride: false`**, against the sketch's `true` — env outranks
+  localStorage, so a per-device toggle would silently do nothing wherever a deployment sets the
+  variable. `userOverride` is now the *write permission*: `setUserOverride` refuses an entry lacking
+  it and logs, rather than writing to a key nothing reads, which would look like it worked.
+  **Two things the type system now enforces, both from 2026-08-09's findings:** a source is declared
+  with its parser or not at all (`envValue`+`parseEnv`, `localStorageKey`+`parse`+`userOverride` are
+  union members), so an untrusted value can't reach the app unvalidated; and `envValue` is a **getter**
+  (`() => process.env.NEXT_PUBLIC_X`), not a key string, because Next.js inlines only the literal
+  member expression. `defineEntry<T>()` is called with an explicit type argument so a mismatched
+  validator is an error.
+  **Done-when status:** adding a setting is now one entry in
+  [entries.client.ts](../../src/config/entries.client.ts) — the providers walk the table and
+  `ClientConfig` is derived from it — so the *declaration* half is met. The Settings page is still
+  hand-built; generating it (needs `ui` metadata per entry) and migrating the other two groups remain.
+  Verified: 40/40 tests, `tsc --noEmit` + eslint clean, dev server renders `/settings`, `/` and
+  `/test`, with the gate's `aria-busy` placeholder still the SSR'd output and no preset labels in the
+  HTML (unchanged from pass 1). **Environment note for the next session:** `npm run dev` (Turbopack)
+  cannot write `.next` on this 9p `/workspace` mount — `Operation not permitted (os error 1)` — so the
+  render check ran on `npx next dev` (webpack). Unrelated to this task.

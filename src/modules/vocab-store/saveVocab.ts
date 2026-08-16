@@ -23,7 +23,7 @@ export async function saveVocab(
   targetLang: string,
 ): Promise<void> {
   // Safe as a sync read: `ConfigGate` resolves the kill-switch before any reader UI can call this.
-  if (!getClientConfig().vocabStore.savingEnabled) return;
+  if (!getClientConfig().VOCAB_SAVING_ENABLED) return;
 
   const sheetId = getVocabSheetId();
   // No sheet configured yet — nothing to save to. Reading is unaffected.

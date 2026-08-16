@@ -90,9 +90,9 @@ cp .env.local.example .env.local
 | `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` | optional | `false`/`0`/`no`/`off` disables saving new vocab rows (default on). Governs both client and server. |
 
 This flag lets you read without writing to the sheet — reached through the config facade on each
-side: `getClientConfig().vocabStore.savingEnabled` in
-[saveVocab.ts](../src/modules/vocab-store/saveVocab.ts) (client, via
-[config.client.ts](../src/config/config.client.ts)) and `serverConfig.vocabSavingEnabled` in
+side: `getClientConfig().VOCAB_SAVING_ENABLED` in
+[saveVocab.ts](../src/modules/vocab-store/saveVocab.ts) (client, declared in
+[entries.client.ts](../src/config/entries.client.ts)) and `serverConfig.vocabSavingEnabled` in
 [api/vocab/route.ts](../src/app/api/vocab/route.ts) (server).
 
 ## 7. Prepare your vocabulary Google Sheet

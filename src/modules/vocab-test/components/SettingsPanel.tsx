@@ -61,7 +61,7 @@ export default function SettingsPanel() {
   // `saved` is the persisted value, served by the config facade — used to show "unsaved changes"
   // and gate the Save button. `ConfigGate` has already resolved config by the time this renders, so
   // it's the real stored value on the first render and can seed the draft directly.
-  const saved = useClientConfig((c) => c.vocabTest.srsTuning);
+  const saved = useClientConfig((c) => c.SRS_TUNING);
   const [draft, setDraft] = useState<TuningConfig>(saved);
 
   const profile: ProfileName = useMemo(() => profileOf(draft), [draft]);
@@ -81,7 +81,7 @@ export default function SettingsPanel() {
       notify({ variant: 'error', message: 'Some values are invalid — check the highlighted fields.' });
       return;
     }
-    setUserOverride({ vocabTest: { srsTuning: draft } });
+    setUserOverride({ SRS_TUNING: draft });
     notify({ variant: 'success', message: 'Quiz settings saved' });
   };
 
