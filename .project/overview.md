@@ -29,7 +29,6 @@ translation and linguistic context as you read.
 
 ### [002-build-v2-mvp](goals/002-build-v2-mvp.md) — active
 
-- [[task-018_unified-settings-management]] — in-progress
 - [[task-019_centralized-app-config]] — in-review
 
 ## Output locations
