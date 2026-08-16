@@ -1,3 +1,4 @@
+import 'server-only';
 import { requireEnv } from './env.ts';
 import { parseBooleanEnv } from './booleanEnv.ts';
 
