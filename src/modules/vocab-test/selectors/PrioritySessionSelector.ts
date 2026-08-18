@@ -1,6 +1,7 @@
 import type { SessionSelector, SelectOptions } from '../ports/SessionSelector';
 import { STAGE, type Direction, type KnowledgeItem, type QuizCard, type Status } from '../types';
 import { deriveStage, DEFAULT_KNOWN_THRESHOLD_SECONDS } from '../stage';
+import { DEFAULT_RECOGNITION_RATIO } from '../settings';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -22,6 +23,10 @@ export interface PriorityConfig {
   // budget scales linearly from full (no backlog) down to 0 at this count, so a large
   // learning backlog crowds out new words. Must be > 0.
   learningCapForNew: number;
+  // Share of cards (0–1) that test *recognition* — the word shown in the language being learned,
+  // answered in the one you already know ('fi-en' while Finnish is the only pair). The rest test
+  // production, the harder direction. User-tunable (task-020), since the two are different skills.
+  recognitionRatio: number;
 }
 
 export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
@@ -32,13 +37,13 @@ export const DEFAULT_PRIORITY_CONFIG: PriorityConfig = {
   jitter: 0.5,
   knownThresholdSeconds: DEFAULT_KNOWN_THRESHOLD_SECONDS,
   learningCapForNew: 8,
+  recognitionRatio: DEFAULT_RECOGNITION_RATIO,
 };
 
 const isNew = (item: KnowledgeItem) => !item.lastTested || item.intervalSeconds == null;
 
-function randomDirection(): Direction {
-  return Math.random() < 0.5 ? 'fi-en' : 'en-fi';
-}
+const randomDirection = (recognitionRatio: number): Direction =>
+  Math.random() < recognitionRatio ? 'fi-en' : 'en-fi';
 
 // "Most-overdue & weakest first": candidates are due reviews + new words, scored by status
 // weakness + overdueness, with a cap on how much of the session is new words. All numbers
@@ -91,7 +96,7 @@ export function createPrioritySessionSelector(
       return picked
         .sort((a, b) => b.score - a.score)
         .slice(0, size)
-        .map(({ item }): QuizCard => ({ item, direction: randomDirection() }));
+        .map(({ item }): QuizCard => ({ item, direction: randomDirection(config.recognitionRatio) }));
     },
   };
 }

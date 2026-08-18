@@ -79,3 +79,8 @@ A word saved while reading shows up as a row in the user's Google Sheet.
   [[004-srs-interval-schema]] `Status` became a user sheet formula, so a newly-saved word now
   has only `Finnish`/`Translation` (reads as "New" until first quizzed). Behaviour change made
   in task-010; recorded here rather than reopening this task.
+- 2026-07-18: Post-done note — the server-side override `VOCAB_SAVING_ENABLED` added here was
+  removed in [[task-019_centralized-app-config]]: for this app's actual deployment model (local/
+  personal use, restart to change anything) it added no real independent value over the client
+  flag, so both sides now read `NEXT_PUBLIC_VOCAB_SAVING_ENABLED` only. Recorded here rather than
+  reopening this task.

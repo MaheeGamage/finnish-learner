@@ -29,6 +29,8 @@ best-effort, not a guaranteed linguistic derivation.
 **Decisions (agreed with human):**
 - **Presentation:** compact one-line summary always visible; expands (tap/click) to the full
   step list. Must respect the existing mobile viewport clamp — no overflow on small screens.
+  *(Revised in the visual phase → **always-visible stacked steps, no expander**: the tooltip is
+  `pointer-events-none` / dismiss-on-mouseleave, so click-to-expand isn't viable. See below.)*
 - **Scope of first cut:** affixes (case / personal / tense / plural endings) + KPT consonant
   gradation. **Inflection-type naming (verb type 1–6, declension class) is out of scope for
   now** — Voikko doesn't provide it; revisit as a follow-up.
@@ -59,8 +61,8 @@ best-effort, not a guaranteed linguistic derivation.
 
 ## Done when
 
-Hovering/tapping a common inflected Finnish word shows a compact derivation line that
-expands to labeled steps (affixes + KPT gradation), e.g. `nukun → nukkua · kk→k + -n (1st sg)`.
+Hovering/tapping a common inflected Finnish word shows an always-visible stacked list of
+labeled steps (affixes + KPT gradation), e.g. `nukun → nukkua · kk→k + -n (1st sg)`.
 When the engine can't build a confident derivation, the tooltip falls back to the current
 base-form + summary display with no regression.
 
@@ -80,6 +82,10 @@ base-form + summary display with no regression.
   renders the stacked-step derivation (Variant B), falling back to the one-line summary.
 
 ## Log
+- 2026-07-03: **Done** — human visually verified the tooltip in the browser and promoted the
+  task to `done` [human]. One follow-up deferred (not part of this task): the `[verb]`/`[noun]`
+  badge is sourced from Wiktionary `partOfSpeech` (often null) and could fall back to Voikko
+  `wordClass`; recorded in [overview](../overview.md) Notes. [ai]
 - 2026-07-03: **Visual phase wired** [ai]. Human picked Variant B (stacked steps, always
   visible) from a rendered mockup. `DerivationStep` refactored to `{ kind, marker, detail,
   result }` so the tooltip styles the gradation token (amber) vs ending (indigo) without

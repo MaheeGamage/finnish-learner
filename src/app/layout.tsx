@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import TopBar from "@/components/TopBar";
 import { ToastHost } from "@/modules/notifications";
+import ConfigGate from "@/config/ConfigGate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <TopBar />
-        {children}
+        <ConfigGate>{children}</ConfigGate>
         <ToastHost />
       </body>
     </html>

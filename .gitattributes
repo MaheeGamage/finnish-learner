@@ -1,0 +1,4 @@
+# Normalize line endings. Shell scripts MUST stay LF — CRLF breaks the
+# shebang when they run inside Linux/Docker (init-firewall.sh in .devcontainer).
+* text=auto
+*.sh text eol=lf

@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { notify } from '@/modules/notifications';
+import { useClientConfig, setUserOverride } from '@/config/config.client';
 import {
   DEFAULT_TUNING,
   PRESETS,
   parseTuning,
   profileOf,
-  saveTuning,
-  loadTuning,
   type PresetName,
   type ProfileName,
   type TuningConfig,
@@ -59,24 +58,27 @@ function statusFormula(thresholdSeconds: number): string {
 const equal = (a: TuningConfig, b: TuningConfig) => JSON.stringify(a) === JSON.stringify(b);
 
 export default function SettingsPanel() {
-  // Seed with the deterministic default so server and client first render match; the real saved
-  // config is read from localStorage after mount (below) to avoid an SSR hydration mismatch.
-  // `saved` tracks the persisted copy so we can show "unsaved changes" and gate the Save button.
-  const [draft, setDraft] = useState<TuningConfig>(DEFAULT_TUNING);
-  const [saved, setSaved] = useState<TuningConfig>(DEFAULT_TUNING);
-
-  useEffect(() => {
-    const stored = loadTuning();
-    setDraft(stored);
-    setSaved(stored);
-  }, []);
+  // `saved` is the persisted value, served by the config facade — used to show "unsaved changes"
+  // and gate the Save button. `ConfigGate` has already resolved config by the time this renders, so
+  // it's the real stored value on the first render and can seed the draft directly.
+  const saved = useClientConfig((c) => c.SRS_TUNING);
+  const [draft, setDraft] = useState<TuningConfig>(saved);
 
   const profile: ProfileName = useMemo(() => profileOf(draft), [draft]);
   const dirty = !equal(draft, saved);
   const valid = parseTuning(draft) !== null;
   const formula = statusFormula(draft.knownThresholdSeconds);
 
-  const applyPreset = (name: PresetName) => setDraft(PRESETS[name]);
+  // User-facing copy names the actual languages — clearer than "recognition/production" for a
+  // reader, and honest while Finnish→English is the only pair the app has.
+  const directionInvalid =
+    !Number.isFinite(draft.recognitionRatio) || draft.recognitionRatio < 0 || draft.recognitionRatio > 1;
+  const recognitionPercent = Math.round(draft.recognitionRatio * 100);
+
+  // The direction mix survives a preset switch: presets are spacing timelines, and every preset
+  // carries the same default ratio, so applying one wholesale would silently undo the user's choice.
+  const applyPreset = (name: PresetName) =>
+    setDraft((d) => ({ ...PRESETS[name], recognitionRatio: d.recognitionRatio }));
 
   const setFirstReview = (g: Grade, value: number) =>
     setDraft((d) => ({ ...d, firstReview: { ...d.firstReview, [g]: value } }));
@@ -88,8 +90,7 @@ export default function SettingsPanel() {
       notify({ variant: 'error', message: 'Some values are invalid — check the highlighted fields.' });
       return;
     }
-    saveTuning(draft);
-    setSaved(draft);
+    setUserOverride({ SRS_TUNING: draft });
     notify({ variant: 'success', message: 'Quiz settings saved' });
   };
 
@@ -219,6 +220,36 @@ export default function SettingsPanel() {
         </div>
       </Card>
 
+      {/* Question direction */}
+      <Card>
+        <SectionTitle>Question direction</SectionTitle>
+        <p className="mb-4 text-sm text-gray-500">
+          How often a card shows the Finnish word and asks for the English. The rest go the other
+          way — harder, since you have to produce the Finnish rather than recognise it.
+        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="w-16 shrink-0 text-sm font-medium text-gray-700">FI → EN</span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={5}
+            value={Number.isFinite(draft.recognitionRatio) ? Math.round(draft.recognitionRatio * 100) : ''}
+            onChange={(e) => setDraft((d) => ({ ...d, recognitionRatio: e.target.valueAsNumber / 100 }))}
+            className={`w-24 rounded-xl border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${
+              directionInvalid ? 'border-red-400 focus:ring-red-200' : 'border-gray-300 focus:ring-indigo-200'
+            }`}
+          />
+          <span className="text-sm text-gray-400">%</span>
+        </div>
+
+        {directionInvalid ? (
+          <p className="mt-4 text-sm text-red-600">Enter a value between 0 and 100.</p>
+        ) : (
+          <DirectionSplit recognitionPercent={recognitionPercent} />
+        )}
+      </Card>
+
       {/* Sheet formula */}
       <Card>
         <SectionTitle>Sheet Status formula</SectionTitle>
@@ -276,6 +307,65 @@ function Card({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-base font-semibold text-gray-900">{children}</h2>;
+}
+
+// The direction mix as a proportion bar plus a legend. A single "25% A · 75% B" line ran the two
+// halves together; splitting the two directions into their own labelled rows, each tied to a
+// segment of the bar, makes the split readable at a glance.
+//
+// The two hues are indigo-600 / amber-600 — checked for colour-blind separation against the white
+// card (ΔE 34 protan, both ≥ 3:1 contrast), not picked by eye. Identity never rests on colour
+// alone: each row names its direction in text, so the bar is decorative and hidden from screen
+// readers. The 2px gap between segments is what keeps the boundary legible where they meet.
+function DirectionSplit({ recognitionPercent }: { recognitionPercent: number }) {
+  const productionPercent = 100 - recognitionPercent;
+  // Both segments present → each gives up 1px so the pair plus the gap still spans exactly 100%.
+  const inset = recognitionPercent > 0 && recognitionPercent < 100 ? 1 : 0;
+
+  return (
+    <div className="mt-4 space-y-3">
+      <div className="flex h-2.5 gap-[2px]" aria-hidden="true">
+        {recognitionPercent > 0 && (
+          <div
+            className="rounded-[4px] bg-indigo-600"
+            style={{ width: `calc(${recognitionPercent}% - ${inset}px)` }}
+          />
+        )}
+        {productionPercent > 0 && (
+          <div
+            className="rounded-[4px] bg-amber-600"
+            style={{ width: `calc(${productionPercent}% - ${inset}px)` }}
+          />
+        )}
+      </div>
+      <div className="flex flex-wrap gap-x-8 gap-y-2">
+        <DirectionLegend swatch="bg-indigo-600" percent={recognitionPercent} label="Finnish → English" hint="recognise" />
+        <DirectionLegend swatch="bg-amber-600" percent={productionPercent} label="English → Finnish" hint="produce" />
+      </div>
+    </div>
+  );
+}
+
+function DirectionLegend({
+  swatch,
+  percent,
+  label,
+  hint,
+}: {
+  swatch: string;
+  percent: number;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className={`relative top-[1px] h-2.5 w-2.5 shrink-0 rounded-full ${swatch}`} />
+      <span className="text-sm text-gray-700">
+        <span className="font-medium tabular-nums">{percent}%</span> {label}
+      </span>
+      <span className="text-sm text-gray-400">{hint}</span>
+    </div>
+  );
 }
 
 // A seconds-valued field with a label, optional colour dot, and a friendly read-back.
